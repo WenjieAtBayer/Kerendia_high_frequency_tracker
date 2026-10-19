@@ -55,8 +55,8 @@ We report different metrics for each segment because they measure different thin
 
 > **NBRx Lift** = average post-window NBRx per HCP − average pre-window NBRx per HCP
 >
-> - **Pre-window:** total Kerendia new prescriptions in the 4 weeks (28 days) *before* the alert date
-> - **Post-window:** total Kerendia new prescriptions in the 4 weeks (28 days) *after* the engagement anchor date (first attended date if attended; first invite date if invited only; alert date if not invited)
+> - **Pre-window:** total Kerendia new prescriptions (NBRx) in the 4 weeks (28 days) *before* the alert date
+> - **Post-window:** total Kerendia new prescriptions (NBRx) in the 4 weeks (28 days) *after* the engagement anchor date (first attended date if attended; first invite date if invited only; alert date if not invited)
 > - A positive lift means HCPs wrote more Kerendia after the event than before
 
 ### 3a. Segment A — Prescribing Lift (existing writers)
@@ -99,9 +99,11 @@ New writer = HCP with **zero Kerendia NBRx in the 12 months before the alert** w
 
 | Cohort | HCPs | New Writers | **NW Rate** | Post NBRx/HCP |
 |--------|------|-------------|-------------|---------------|
-| **Attended** | 6 | 0 | 0% | 0.17 |
+| **Attended** | 6 | 0 | 0% | 0.17† |
 | Invited Only | 12 | 1 | **8.3%** | 0.50 |
 | Not Invited | 3,849 | 14 | 0.4% | 0.01 |
+
+> **† Note on August ATTENDED (0 new writers, 0.17 post-NBRx):** One of the 6 attended HCPs is classified as Segment B "non-writer" in the call plan but has been actively writing Kerendia since April 2026 (pre-dating the alert). They correctly do not count as a "new writer" under our 12-month lookback. Their continued prescribing (1 script) produces the 0.17 average (1 ÷ 6). See Section 7 below for details on segment-label lag.
 
 **What this means for Segment B:**
 - The July invited-only cohort (3 HCPs) saw 1 new writer (33%) — a strong early signal, but an extremely small sample.
@@ -156,6 +158,40 @@ The automated weekly refresh pipeline is now in place — as new Rx data arrives
 
 ---
 
+## 7. Data Caveats & Known Limitations
+
+### 7a. Segment Labels May Lag Actual Prescribing Behavior
+
+The call plan segments ("A_High_Potential_Writer" and "B_High_Potential_Non_Writer") are assigned at a **point in time** during the call plan cycle. An HCP classified as Segment B when the list was built may have started prescribing Kerendia by the time the NBA alert fires months later. We found:
+
+- **427 out of 5,476 Segment B NPIs** (7.8%) are flagged `KERENDIA_WRITER_IN_LAST_12_MONTHS = 1` in the alert data itself — the upstream data recognizes them as writers even though the segment label says "non-writer."
+- **77 Segment B NPIs** have actual Kerendia NBRx (new prescriptions) in the 12 months before their alert in our IQVIA data.
+- **107 additional Segment B NPIs** have Kerendia TRx (refills/renewals) but zero NBRx — they manage existing patients but haven't initiated new ones.
+
+**Impact on reporting:** When you see non-zero post-NBRx for Segment B cohorts with 0 new writers (e.g., August ATTENDED: 0 new writers but 0.17 post-NBRx), it's because a subset of Segment B HCPs were already writing before the program. Our 12-month lookback correctly excludes them from the new-writer count. The segment label is stale, but the metric is accurate.
+
+### 7b. Why We Use NBRx (Not TRx) for New-Writer Classification
+
+"New writer" is defined as zero **NBRx** (new prescriptions) in the 12 months before the alert. We chose NBRx over TRx because:
+
+| | NBRx (New Rx) | TRx (Total Rx) |
+|---|---|---|
+| **Measures** | New patient starts on Kerendia | All scripts including refills and renewals |
+| **Captures** | Active prescribing decision | Ongoing patient management |
+| **HCPs with TRx but zero NBRx** | 107 in Segment B | — |
+| **Interpretation** | "Started prescribing to new patients" | "Has any Kerendia script activity" |
+
+The 107 HCPs with TRx-only (refills) but zero NBRx have *not* made a new prescribing decision — they're renewing existing patients. Speaker programs aim to drive **new patient starts**, which is what NBRx captures. Using TRx would overcount "existing writers" and undercount true new-writer conversions.
+
+### 7c. Small Sample Sizes
+
+Attended cohorts are small (5–10 HCPs per month). Results are directional, not statistically powered. Confidence will improve as:
+- More months accumulate (Sep, Oct cohorts)
+- 12-week mature reads become available
+- Invite rates increase, growing the attended pool
+
+---
+
 ## Appendix: Definitions & Methodology
 
 | Term | Definition |
@@ -163,11 +199,13 @@ The automated weekly refresh pipeline is now in place — as new Rx data arrives
 | **NBA Alert** | Monthly flag from the Next Best Action engine identifying HCPs with high potential for Kerendia prescribing. Issued on the 7th of each month. |
 | **Funnel Stages** | ATTENDED = invited and attended a speaker program within 30 days of alert. INVITED_ONLY = invited but did not attend. NOT_INVITED = no invitation within 30 days. |
 | **NBRx Lift** | Per-HCP change in Kerendia new prescriptions: average 4-week post-window NBRx minus average 4-week pre-window NBRx. Positive = more scripts after. |
-| **New Writer** | HCP with zero Kerendia NBRx in the **12 months** before the alert who wrote at least one script in the post-window. (12-month lookback ensures established intermittent writers are not misclassified.) |
+| **New Writer** | HCP with zero Kerendia NBRx in the **12 months** before the alert who wrote at least one NBRx in the post-window. Uses NBRx (new scripts), not TRx (total scripts including refills). 12-month lookback ensures intermittent writers are not misclassified. |
 | **Post-Anchor Date** | The start of the post-window. Adapts by cohort: first attended date (if attended) > first invite date (if invited) > alert date (if not invited). This ensures we measure impact from the actual point of engagement, not just the alert. |
 | **4-Week Early Read** | 28-day pre/post windows. Available sooner; captures immediate response. May understate full effect. |
 | **12-Week Mature Read** | 84-day pre/post windows. Captures sustained change over 2–3 patient visit cycles. Requires more data accumulation. |
 | **Coverage Flag** | % of HCPs with complete Rx data for the full post-window. Metrics are only reliable when coverage ≥ 90%. |
+| **Segment A** | Call plan segment "A_High_Potential_Writer" — HCPs with established Kerendia prescribing history. Report **lift** for this segment. |
+| **Segment B** | Call plan segment "B_High_Potential_Non_Writer" — HCPs with clinical potential but no recent Kerendia prescribing. Report **new-writer conversion** for this segment. Note: ~7.8% may have started writing since the segment was assigned (see Section 7a). |
 
 **Rx data source:** Kerendia NBRx from IQVIA LAAD-based LRx v6, excluding cash-pay, weekly grain.
 
