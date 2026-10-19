@@ -170,20 +170,7 @@ The call plan segments ("A_High_Potential_Writer" and "B_High_Potential_Non_Writ
 
 **Impact on reporting:** When you see non-zero post-NBRx for Segment B cohorts with 0 new writers (e.g., August ATTENDED: 0 new writers but 0.17 post-NBRx), it's because a subset of Segment B HCPs were already writing before the program. Our 12-month lookback correctly excludes them from the new-writer count. The segment label is stale, but the metric is accurate.
 
-### 7b. Why We Use NBRx (Not TRx) for New-Writer Classification
-
-"New writer" is defined as zero **NBRx** (new prescriptions) in the 12 months before the alert. We chose NBRx over TRx because:
-
-| | NBRx (New Rx) | TRx (Total Rx) |
-|---|---|---|
-| **Measures** | New patient starts on Kerendia | All scripts including refills and renewals |
-| **Captures** | Active prescribing decision | Ongoing patient management |
-| **HCPs with TRx but zero NBRx** | 107 in Segment B | — |
-| **Interpretation** | "Started prescribing to new patients" | "Has any Kerendia script activity" |
-
-The 107 HCPs with TRx-only (refills) but zero NBRx have *not* made a new prescribing decision — they're renewing existing patients. Speaker programs aim to drive **new patient starts**, which is what NBRx captures. Using TRx would overcount "existing writers" and undercount true new-writer conversions.
-
-### 7c. Small Sample Sizes
+### 7b. Small Sample Sizes
 
 Attended cohorts are small (5–10 HCPs per month). Results are directional, not statistically powered. Confidence will improve as:
 - More months accumulate (Sep, Oct cohorts)
