@@ -1,0 +1,3559 @@
+{
+  "datasets": [
+    {
+      "name": "national_nbrx",
+      "displayName": "National NBRx Trend",
+      "queryLines": [
+        "SELECT\n",
+        "  *\n",
+        "FROM\n",
+        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_nbrx_month"
+      ]
+    },
+    {
+      "name": "national_trx",
+      "displayName": "National TRx Trend",
+      "queryLines": [
+        "SELECT\n",
+        "  *\n",
+        "FROM\n",
+        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_trx_month"
+      ]
+    },
+    {
+      "name": "lmv_attendance",
+      "displayName": "Speaker Attendance (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_attendance",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_lift",
+      "displayName": "Speaker Lift (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_lift",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          },
+          {
+            "name": "cohort",
+            "expr": "CASE WHEN source.is_attended THEN 'Attended' ELSE 'Not Attended' END"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.* EXCEPT (avg_pre_nbrx, avg_post_nbrx, avg_lift, avg_trx_pre, avg_trx_post, avg_trx_lift, pct_attendees_changed, new_writer_rate, call_coverage_30d)"
+          },
+          {
+            "name": "avg_pre_nbrx",
+            "expr": "MEASURE(source.avg_pre_nbrx)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_post_nbrx",
+            "expr": "MEASURE(source.avg_post_nbrx)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_lift",
+            "expr": "MEASURE(source.avg_lift)",
+            "comment": "Average NBRx lift per HCP",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_trx_pre",
+            "expr": "MEASURE(source.avg_trx_pre)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_trx_post",
+            "expr": "MEASURE(source.avg_trx_post)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_trx_lift",
+            "expr": "MEASURE(source.avg_trx_lift)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "pct_attendees_changed",
+            "expr": "MEASURE(source.pct_attendees_changed)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "new_writer_rate",
+            "expr": "MEASURE(source.new_writer_rate)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "call_coverage_30d",
+            "expr": "MEASURE(source.call_coverage_30d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_nba",
+      "displayName": "NBA Alerts (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_nba",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.* EXCEPT (invitation_rate_30d, invitation_rate_60d, attendance_rate_30d, attendance_rate_60d, invite_to_attend_30d, invite_to_attend_60d)"
+          },
+          {
+            "name": "invitation_rate_30d",
+            "expr": "MEASURE(source.invitation_rate_30d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "invitation_rate_60d",
+            "expr": "MEASURE(source.invitation_rate_60d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "attendance_rate_30d",
+            "expr": "MEASURE(source.attendance_rate_30d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "attendance_rate_60d",
+            "expr": "MEASURE(source.attendance_rate_60d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "invite_to_attend_30d",
+            "expr": "MEASURE(source.invite_to_attend_30d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "invite_to_attend_60d",
+            "expr": "MEASURE(source.invite_to_attend_60d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_nba_rx",
+      "displayName": "NBA Rx Impact (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_nba_rx",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.* EXCEPT (avg_pre_nbrx_4w, avg_post_nbrx_4w, avg_nbrx_lift_4w, new_writer_rate_4w, avg_pre_nbrx_12w, avg_post_nbrx_12w, avg_nbrx_lift_12w, new_writer_rate_12w, pct_4w_covered, pct_12w_covered)"
+          },
+          {
+            "name": "avg_pre_nbrx_4w",
+            "expr": "MEASURE(source.avg_pre_nbrx_4w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_post_nbrx_4w",
+            "expr": "MEASURE(source.avg_post_nbrx_4w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_nbrx_lift_4w",
+            "expr": "MEASURE(source.avg_nbrx_lift_4w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "new_writer_rate_4w",
+            "expr": "MEASURE(source.new_writer_rate_4w)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_pre_nbrx_12w",
+            "expr": "MEASURE(source.avg_pre_nbrx_12w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_post_nbrx_12w",
+            "expr": "MEASURE(source.avg_post_nbrx_12w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_nbrx_lift_12w",
+            "expr": "MEASURE(source.avg_nbrx_lift_12w)",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "new_writer_rate_12w",
+            "expr": "MEASURE(source.new_writer_rate_12w)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "pct_4w_covered",
+            "expr": "MEASURE(source.pct_4w_covered)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "pct_12w_covered",
+            "expr": "MEASURE(source.pct_12w_covered)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_rx",
+      "displayName": "Speaker NBRx (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_rx",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_trx",
+      "displayName": "Speaker TRx (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_trx",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          },
+          {
+            "name": "cohort",
+            "expr": "CASE WHEN source.is_attended THEN 'Attended' ELSE 'Not Attended' END"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_calls",
+      "displayName": "Speaker Calls (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_calls",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_segment_universe",
+      "displayName": "Segment Universe (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_segment_universe",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_nba_comparison",
+      "displayName": "NBA Cohort Comparison (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_nba_rx",
+        "dimensions": [
+          {
+            "name": "segment",
+            "expr": "CASE WHEN call_plan_segment LIKE 'A%' THEN 'A' WHEN call_plan_segment LIKE 'B%' THEN 'B' ELSE NULL END"
+          },
+          {
+            "name": "engagement",
+            "expr": "CASE funnel_stage\n  WHEN 'ATTENDED' THEN 'Attended'\n  WHEN 'INVITED_ONLY' THEN 'Invited'\n  WHEN 'NOT_INVITED' THEN 'Not Invited'\nEND"
+          },
+          {
+            "name": "source_group",
+            "expr": "nba_group"
+          },
+          {
+            "name": "alert_month",
+            "expr": "alert_month"
+          },
+          {
+            "name": "post_4w_complete",
+            "expr": "post_4w_complete"
+          },
+          {
+            "name": "post_12w_complete",
+            "expr": "post_12w_complete"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "f817dd66",
+      "displayName": "Executive Summary",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Kerendia Speaker Program\n",
+                "### High-Frequency Performance Tracker\n",
+                "*NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP (rolling monthly cohorts, all programs). New Writer = zero Kerendia NBRx in 12 months pre-event who wrote post-window. Data refreshes weekly with v6 source.*"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_attendees",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "measure(attendees)",
+                      "expression": "MEASURE(`attendees`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Unique Attendees",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(attendees)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_target_attendees",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "measure(target_attendees)",
+                      "expression": "MEASURE(`target_attendees`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Target Attendees",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(target_attendees)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_lift",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Avg NBRx Lift (Attended)",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_lift)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_new_writers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "measure(new_writers)",
+                      "expression": "MEASURE(`new_writers`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "New Writers (YTD)",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(new_writers)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_nba_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "measure(programs_attended_60d)",
+                      "expression": "MEASURE(`programs_attended_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "NBA HCPs Attended"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(programs_attended_60d)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "anchor_month",
+                      "expression": "`anchor_month`"
+                    },
+                    {
+                      "name": "measure(prescribers)",
+                      "expression": "MEASURE(`prescribers`)"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`cohort` IN ('Attended')"
+                    },
+                    {
+                      "expression": "`anchor_month` < '2026-08-01'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": "Monthly NBRx Lift & Attendance",
+                "description": {
+                  "value": "Aug–Sep 2026 excluded (incomplete data windows). KPI counters above reflect all-time totals.",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "mark": {
+                "layout": "layer"
+              },
+              "widgetType": "combo",
+              "encodings": {
+                "x": {
+                  "fieldName": "anchor_month",
+                  "displayName": "Month",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": [
+                      {
+                        "fieldName": "measure(prescribers)",
+                        "displayName": "Attended HCPs"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative"
+                    }
+                  },
+                  "secondary": {
+                    "fields": [
+                      {
+                        "fieldName": "measure(avg_lift)",
+                        "displayName": "Avg NBRx Lift"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "nba_funnel_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "measure(npis_alerted)",
+                      "expression": "MEASURE(`npis_alerted`)"
+                    },
+                    {
+                      "name": "measure(invitations_sent_60d)",
+                      "expression": "MEASURE(`invitations_sent_60d`)"
+                    },
+                    {
+                      "name": "measure(programs_attended_60d)",
+                      "expression": "MEASURE(`programs_attended_60d`)"
+                    },
+                    {
+                      "name": "measure(invite_to_attend_60d)",
+                      "expression": "MEASURE(`invite_to_attend_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBA Funnel (Latest Months)",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "alert_month",
+                    "headerAlignment": "left"
+                  },
+                  {
+                    "fieldName": "measure(npis_alerted)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(invitations_sent_60d)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(programs_attended_60d)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(invite_to_attend_60d)",
+                    "headerAlignment": "right"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "genie_link",
+            "multilineTextboxSpec": {
+              "lines": [
+                "[Ask a question about this data →](https://dbc-7281de76-54c6.cloud.databricks.com/genie/rooms/01f1c9939e8a1648bbc09df186d37134)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_segment",
+            "queries": [
+              {
+                "name": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_segment_code",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "segment_code",
+                      "expression": "`segment_code`"
+                    },
+                    {
+                      "name": "segment_code_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Segment"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "segment_code",
+                    "queryName": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_segment_code"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_indication",
+            "queries": [
+              {
+                "name": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_indication",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "indication",
+                      "expression": "`indication`"
+                    },
+                    {
+                      "name": "indication_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Indication"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "indication",
+                    "queryName": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_indication"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_area",
+            "queries": [
+              {
+                "name": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_area",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "area",
+                      "expression": "`area`"
+                    },
+                    {
+                      "name": "area_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Area"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "area",
+                    "queryName": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_area"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_specialty",
+            "queries": [
+              {
+                "name": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_specialty",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "specialty",
+                      "expression": "`specialty`"
+                    },
+                    {
+                      "name": "specialty_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Specialty"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "specialty",
+                    "queryName": "dashboards/01f1cc06cdba19ff91e37cafc66281c3/datasets/01f1cc0a04c41b4d9bbd80a5cb3192f1_specialty"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_programs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "measure(programs)",
+                      "expression": "MEASURE(`programs`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Programs Held"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(programs)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 2,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "effectiveness",
+      "displayName": "Program Effectiveness",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Program Effectiveness\n",
+                "*Did behavior change? How much?*\n",
+                "\n",
+                "**Methodology:** Lift is measured as pre/post NBRx change per HCP. \"Attended\" = HCPs who attended ≥1 speaker program; \"Not Attended\" = matched control. The 4w vs 12w pivot on P6 compares early signal (28-day) vs durable change (84-day). A positive lift means more scripts were written after the program than before."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_by_cohort",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "cohort",
+                      "expression": "`cohort`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBRx Lift by Cohort",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "cohort",
+                  "displayName": "Cohort",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "cohort",
+                  "displayName": "Cohort",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_trend_quarter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "cohort",
+                      "expression": "`cohort`"
+                    },
+                    {
+                      "name": "anchor_quarter",
+                      "expression": "`anchor_quarter`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBRx Lift Trend by Quarter",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "anchor_quarter",
+                  "displayName": "anchor_quarter",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "cohort",
+                  "displayName": "Cohort",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "new_writers_funnel",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_rx",
+                  "fields": [
+                    {
+                      "name": "funnel_stage",
+                      "expression": "`funnel_stage`"
+                    },
+                    {
+                      "name": "measure(new_writers_4w)",
+                      "expression": "MEASURE(`new_writers_4w`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "New Writers by Funnel Stage",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "funnel_stage",
+                  "displayName": "funnel_stage",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(new_writers_4w)",
+                  "displayName": "new_writers_4w",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "funnel_stage",
+                  "displayName": "funnel_stage",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_4w_12w",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_rx",
+                  "fields": [
+                    {
+                      "name": "funnel_stage",
+                      "expression": "`funnel_stage`"
+                    },
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "measure(avg_nbrx_lift_4w)",
+                      "expression": "MEASURE(`avg_nbrx_lift_4w`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "funnel_stage"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "alert_month"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`funnel_stage`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`alert_month`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "4w vs 12w Lift by Funnel Stage",
+                  "fields": []
+                }
+              },
+              "version": 4,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": {
+                  "fields": [
+                    {
+                      "fieldName": "funnel_stage",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "columns": {
+                  "fields": [
+                    {
+                      "fieldName": "alert_month",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "cells": {
+                  "fields": [
+                    {
+                      "fieldName": "measure(avg_nbrx_lift_4w)",
+                      "cellType": "text"
+                    }
+                  ],
+                  "displayAs": "rows"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "trx_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_trx",
+                  "fields": [
+                    {
+                      "name": "cohort",
+                      "expression": "`cohort`"
+                    },
+                    {
+                      "name": "month_id",
+                      "expression": "`month_id`"
+                    },
+                    {
+                      "name": "measure(prescribers)",
+                      "expression": "MEASURE(`prescribers`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "TRx Trend: Attended vs Control",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month_id",
+                  "displayName": "month_id",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(prescribers)",
+                  "displayName": "prescribers",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "cohort",
+                  "displayName": "Cohort",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "segmentation",
+      "displayName": "Audience Segmentation",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Audience Segmentation\n",
+                "*What factors drove the change?*\n",
+                "\n",
+                "**Segment A** (existing writers): measured by NBRx lift — did they write more after attending? **Segment B** (non-writers): measured by new-writer conversion — did they start prescribing? Different segments require different success metrics."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_by_segment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "segment_code",
+                      "expression": "`segment_code`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment_code` IS NOT NULL"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBRx Lift by Segment",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "segment_code",
+                  "displayName": "segment_code",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "segment_code",
+                  "displayName": "segment_code",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_by_specialty",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "specialty",
+                      "expression": "`specialty`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`specialty` IS NOT NULL"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBRx Lift by Specialty",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "specialty",
+                  "displayName": "specialty",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "specialty",
+                  "displayName": "specialty",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "geo_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "area",
+                      "expression": "`area`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "territory",
+                      "expression": "`territory`"
+                    },
+                    {
+                      "name": "measure(prescribers)",
+                      "expression": "MEASURE(`prescribers`)"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    },
+                    {
+                      "name": "measure(new_writers)",
+                      "expression": "MEASURE(`new_writers`)"
+                    },
+                    {
+                      "name": "measure(new_writer_rate)",
+                      "expression": "MEASURE(`new_writer_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Lift by Territory",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "area"
+                  },
+                  {
+                    "fieldName": "region"
+                  },
+                  {
+                    "fieldName": "territory"
+                  },
+                  {
+                    "fieldName": "measure(prescribers)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(avg_lift)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(new_writers)",
+                    "headerAlignment": "right"
+                  },
+                  {
+                    "fieldName": "measure(new_writer_rate)",
+                    "headerAlignment": "right"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 8,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "attendees_by_segment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "measure(attendees)",
+                      "expression": "MEASURE(`attendees`)"
+                    },
+                    {
+                      "name": "segment_code",
+                      "expression": "`segment_code`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment_code` IS NOT NULL"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Attendees by Segment",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "measure(attendees)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "attendees"
+                },
+                "color": {
+                  "fieldName": "segment_code",
+                  "displayName": "segment_code",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 6,
+            "width": 4,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "frequency",
+      "displayName": "Frequency & Exposure",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Frequency & Exposure\n",
+                "*How much exposure drives the most change?*\n",
+                "\n",
+                "**Dose-response:** Lift by number of programs attended (1, 2, 3+). **Call coverage:** % of attendees with a rep follow-up call within 30 days post-event. Higher exposure and timely follow-up are expected to amplify lift."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dose_response",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "exposure_band",
+                      "expression": "`exposure_band`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Lift by Exposure Band (Dose-Response)",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "exposure_band",
+                  "displayName": "exposure_band",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "exposure_band",
+                  "displayName": "exposure_band",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "call_coverage",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "territory",
+                      "expression": "`territory`"
+                    },
+                    {
+                      "name": "measure(call_coverage_30d)",
+                      "expression": "MEASURE(`call_coverage_30d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Rep Follow-Up: Call Coverage (30d)",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(call_coverage_30d)",
+                  "displayName": "call_coverage_30d",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_by_format",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "primary_format",
+                      "expression": "`primary_format`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Lift by Program Format",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "primary_format",
+                  "displayName": "primary_format",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "primary_format",
+                  "displayName": "primary_format",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_by_indication",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "primary_indication",
+                      "expression": "`primary_indication`"
+                    },
+                    {
+                      "name": "measure(avg_lift)",
+                      "expression": "MEASURE(`avg_lift`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Lift by Indication",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "primary_indication",
+                  "displayName": "primary_indication",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lift)",
+                  "displayName": "avg_lift",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "primary_indication",
+                  "displayName": "primary_indication",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "multi_program_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_lift",
+                  "fields": [
+                    {
+                      "name": "segment_code",
+                      "expression": "`segment_code`"
+                    },
+                    {
+                      "name": "exposure_band",
+                      "expression": "`exposure_band`"
+                    },
+                    {
+                      "name": "prescribers",
+                      "expression": "`prescribers`"
+                    },
+                    {
+                      "name": "avg_lift",
+                      "expression": "`avg_lift`"
+                    },
+                    {
+                      "name": "multi_program_attendees",
+                      "expression": "`multi_program_attendees`"
+                    },
+                    {
+                      "name": "new_writers",
+                      "expression": "`new_writers`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Multi-Program Attendance Detail",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "segment_code"
+                  },
+                  {
+                    "fieldName": "exposure_band"
+                  },
+                  {
+                    "fieldName": "prescribers"
+                  },
+                  {
+                    "fieldName": "avg_lift"
+                  },
+                  {
+                    "fieldName": "multi_program_attendees"
+                  },
+                  {
+                    "fieldName": "new_writers"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "journey",
+      "displayName": "Engagement Journey",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Engagement Journey\n",
+                "*Where does the funnel leak? What's the conversion path?*\n",
+                "\n",
+                "**NBA Funnel:** Alert → Invitation (60d window) → Attendance (60d window). The bottleneck is alert-to-invite (~1–2%), not invite-to-attend (~25–30%). Counts show absolute HCPs at each stage; conversion % is invite-to-attend rate."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "funnel_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "measure(alerts)",
+                      "expression": "MEASURE(`alerts`)"
+                    },
+                    {
+                      "name": "measure(npis_alerted)",
+                      "expression": "MEASURE(`npis_alerted`)"
+                    },
+                    {
+                      "name": "measure(invitations_sent_60d)",
+                      "expression": "MEASURE(`invitations_sent_60d`)"
+                    },
+                    {
+                      "name": "measure(programs_attended_60d)",
+                      "expression": "MEASURE(`programs_attended_60d`)"
+                    },
+                    {
+                      "name": "measure(invite_to_attend_60d)",
+                      "expression": "MEASURE(`invite_to_attend_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBA Funnel by Month",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "alert_month"
+                  },
+                  {
+                    "fieldName": "measure(alerts)"
+                  },
+                  {
+                    "fieldName": "measure(npis_alerted)"
+                  },
+                  {
+                    "fieldName": "measure(invitations_sent_60d)"
+                  },
+                  {
+                    "fieldName": "measure(programs_attended_60d)"
+                  },
+                  {
+                    "fieldName": "measure(invite_to_attend_60d)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "invite_rate_territory",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "territory",
+                      "expression": "`territory`"
+                    },
+                    {
+                      "name": "measure(invitations_sent_60d)",
+                      "expression": "MEASURE(`invitations_sent_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Invitations Sent by Territory"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(invitations_sent_60d)",
+                  "displayName": "Invitations Sent",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "alert_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "measure(npis_alerted)",
+                      "expression": "MEASURE(`npis_alerted`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Monthly Alert Volume Trend",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "alert_month",
+                  "displayName": "alert_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(npis_alerted)",
+                  "displayName": "npis_alerted",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "alert_month",
+                  "displayName": "alert_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "attendance_by_territory",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "territory",
+                      "expression": "`territory`"
+                    },
+                    {
+                      "name": "measure(attendees)",
+                      "expression": "MEASURE(`attendees`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Attendance by Territory",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(attendees)",
+                  "displayName": "attendees",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "programs_by_territory",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_attendance",
+                  "fields": [
+                    {
+                      "name": "territory",
+                      "expression": "`territory`"
+                    },
+                    {
+                      "name": "measure(programs)",
+                      "expression": "MEASURE(`programs`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Programs by Territory",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(programs)",
+                  "displayName": "programs",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "territory",
+                  "displayName": "territory",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 10,
+            "width": 6,
+            "height": 5
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "nba_spotlight",
+      "displayName": "NBA Initiative Spotlight",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## NBA Initiative Spotlight\n",
+                "*Is the targeted alert-to-attend pathway driving measurable Rx impact?*\n",
+                "\n",
+                "NBA alerts began **July 2026**. HCPs are classified by engagement depth: **Attended** (alert → invite → program), **Invited Only** (alert → invite, no program), **Not Invited** (alert only, no invite). Each section compares Rx behavior change across these three cohorts to isolate the incremental value of deeper engagement."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "nba_funnel",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "measure(npis_alerted)",
+                      "expression": "MEASURE(`npis_alerted`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "NBA Funnel by Month",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "alert_month",
+                  "displayName": "alert_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(npis_alerted)",
+                  "displayName": "npis_alerted",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "alert_month",
+                  "displayName": "alert_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "genie_link",
+            "multilineTextboxSpec": {
+              "lines": [
+                "[Ask a question about this data →](https://dbc-7281de76-54c6.cloud.databricks.com/genie/rooms/01f1c9939e8a1648bbc09df186d37134)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "early_read_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Early Read (4-Week Signal)\n",
+                "*Invite/Attend windows: 30 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 28 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 4-week post-window.*"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_4w",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_comparison",
+                  "fields": [
+                    {
+                      "name": "engagement",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "name": "source_group",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "name": "avg_nbrx_lift",
+                      "expression": "MEASURE(`avg_nbrx_lift_4w`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment` IN ('A')"
+                    },
+                    {
+                      "expression": "`post_4w_complete` IN (true)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "Seg A: NBA vs Non-NBA Lift by Engagement",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Existing writers. Lift = avg post-window NBRx/HCP minus avg pre-window NBRx/HCP (4-week window). NBA targeting amplifies lift 4× beyond non-NBA baseline.",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "engagement"
+                  },
+                  {
+                    "fieldName": "source_group"
+                  },
+                  {
+                    "fieldName": "avg_nbrx_lift"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "nw_rate_4w",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_comparison",
+                  "fields": [
+                    {
+                      "name": "engagement",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "name": "source_group",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "name": "new_writer_rate",
+                      "expression": "MEASURE(`new_writer_rate_4w`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment` IN ('B')"
+                    },
+                    {
+                      "expression": "`post_4w_complete` IN (true)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "Seg B: NBA vs Non-NBA New Writer Rate",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Non-writers. NBA identifies HCPs with comparable conversion potential.",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "engagement"
+                  },
+                  {
+                    "fieldName": "source_group"
+                  },
+                  {
+                    "fieldName": "new_writer_rate"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 12,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "mature_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Mature View (12-Week Durability)\n",
+                "*Invite/Attend windows: 60 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 84 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 12-week post-window. July 2026 cohort's 12-week window closes October 2026 — data will populate as cohorts mature.*"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "lift_12w",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_comparison",
+                  "fields": [
+                    {
+                      "name": "engagement",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "name": "source_group",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "name": "avg_nbrx_lift",
+                      "expression": "MEASURE(`avg_nbrx_lift_12w`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment` IN ('A')"
+                    },
+                    {
+                      "expression": "`post_12w_complete` IN (true)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "Seg A: 12-Week Lift — Data Maturing",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Existing writers. Lift = avg post-window NBRx/HCP minus avg pre-window NBRx/HCP (12-week window). July cohort matures Oct 2026.",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "engagement"
+                  },
+                  {
+                    "fieldName": "source_group"
+                  },
+                  {
+                    "fieldName": "avg_nbrx_lift"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "nw_rate_12w",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_comparison",
+                  "fields": [
+                    {
+                      "name": "engagement",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "name": "source_group",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "name": "new_writer_rate",
+                      "expression": "MEASURE(`new_writer_rate_12w`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`segment` IN ('B')"
+                    },
+                    {
+                      "expression": "`post_12w_complete` IN (true)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "Seg B: 12-Week New Writer Rate — Data Maturing",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Critical for Seg B non-writers.",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "engagement"
+                  },
+                  {
+                    "fieldName": "source_group"
+                  },
+                  {
+                    "fieldName": "new_writer_rate"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 19,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "coverage_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_rx",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "funnel_stage",
+                      "expression": "`funnel_stage`"
+                    },
+                    {
+                      "name": "measure(pct_4w_covered)",
+                      "expression": "MEASURE(`pct_4w_covered`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "alert_month"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "funnel_stage"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`funnel_stage`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Data Coverage by Month & Cohort"
+              },
+              "version": 3,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": [
+                  {
+                    "fieldName": "alert_month"
+                  }
+                ],
+                "columns": [
+                  {
+                    "fieldName": "funnel_stage"
+                  }
+                ],
+                "cell": {
+                  "type": "single-cell",
+                  "fieldName": "measure(pct_4w_covered)",
+                  "cellType": "text"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "hcp_counts",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_comparison",
+                  "fields": [
+                    {
+                      "name": "engagement",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "name": "source_group",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "name": "segment",
+                      "expression": "`segment`"
+                    },
+                    {
+                      "name": "measure(npis)",
+                      "expression": "MEASURE(`npis`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "engagement",
+                          "source_group"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "segment"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`engagement`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`source_group`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`segment`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "HCP Volume: NBA vs Not NBA by Engagement — Small NBA Attended/Invited Samples",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Universe limited to Segment A &amp; B HCPs. NBA Attended and Invited n’s remain low, limiting confidence in those bars above.",
+                  "fields": []
+                }
+              },
+              "version": 4,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": {
+                  "fields": [
+                    {
+                      "fieldName": "engagement",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    },
+                    {
+                      "fieldName": "source_group",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "columns": {
+                  "fields": [
+                    {
+                      "fieldName": "segment",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "cells": {
+                  "fields": [
+                    {
+                      "fieldName": "measure(npis)",
+                      "cellType": "text"
+                    }
+                  ],
+                  "displayAs": "rows"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 28,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "invite_rate_by_group",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "nba_group",
+                      "expression": "`nba_group`"
+                    },
+                    {
+                      "name": "invitation_rate_60d",
+                      "expression": "MEASURE(`invitation_rate_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Invitation Rate (60d) by Month & Group"
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invitation Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invite Rate\",\"format\":\".1%\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "alert_month"
+                  },
+                  {
+                    "fieldName": "nba_group"
+                  },
+                  {
+                    "fieldName": "invitation_rate_60d"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "attend_rate_by_group",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba",
+                  "fields": [
+                    {
+                      "name": "alert_month",
+                      "expression": "`alert_month`"
+                    },
+                    {
+                      "name": "nba_group",
+                      "expression": "`nba_group`"
+                    },
+                    {
+                      "name": "invite_to_attend_60d",
+                      "expression": "MEASURE(`invite_to_attend_60d`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Invite-to-Attend Rate (60d) by Month &amp; Group",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite-to-Attend Rate\",\"axis\":{\"format\":\".0%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite→Attend\",\"format\":\".0%\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "alert_month"
+                  },
+                  {
+                    "fieldName": "nba_group"
+                  },
+                  {
+                    "fieldName": "invite_to_attend_60d"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#E6E9EA",
+        "dark": "#1E2931"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#15181C"
+      },
+      "widgetBorderColor": {
+        "light": "#F3F5F6",
+        "dark": "#21292F"
+      },
+      "fontColor": {
+        "light": "#1A2127",
+        "dark": "#EEF0F2"
+      },
+      "selectionColor": {
+        "light": "#0E7AB9",
+        "dark": "#41ADEC"
+      },
+      "visualizationColors": [
+        "#A6CEE3",
+        "#1F78B4",
+        "#B2DF8A",
+        "#33A02C",
+        "#FB9A99",
+        "#E31A1C",
+        "#FDBF6F",
+        "#FF7F00",
+        "#CAB2D6",
+        "#6A3D9A",
+        "#FFFF99",
+        "#B15928"
+      ],
+      "widgetHeaderAlignment": "LEFT",
+      "fontFamily": "Inter",
+      "widgetPadding": 12,
+      "widgetMargin": 8,
+      "widgetCornerRadius": 8,
+      "widgetShadow": 15,
+      "continuousGradient": {
+        "lightMode": {
+          "fromCategoricalIndex": 0
+        },
+        "darkMode": {
+          "fromCategoricalIndex": 0
+        }
+      },
+      "fontSettings": {
+        "base": {
+          "fontFamily": "Inter",
+          "fontColor": {
+            "light": "#1A2127",
+            "dark": "#EEF0F2"
+          },
+          "fontSize": 12,
+          "fontWeight": 400
+        },
+        "widgetTitle": {
+          "fontSize": 14,
+          "fontWeight": 600
+        },
+        "widgetDescription": {
+          "fontSize": 12,
+          "fontWeight": 400
+        },
+        "fieldTitle": {
+          "textCase": "TEXT_CASE_UPPERCASE",
+          "fontColor": {
+            "light": "#31373D",
+            "dark": "#D6D8DA"
+          },
+          "fontSize": 11,
+          "fontWeight": 400
+        },
+        "fieldValue": {
+          "fontColor": {
+            "light": "#31373D",
+            "dark": "#D6D8DA"
+          },
+          "fontSize": 11,
+          "fontWeight": 400
+        }
+      },
+      "gridLineColor": {
+        "light": "#D6D7D8",
+        "dark": "#3C3E42"
+      },
+      "axisLineColor": {
+        "light": "#B0B4B6",
+        "dark": "#555E64"
+      },
+      "visualizationColorMappings": [
+        {
+          "value": "Attended",
+          "color": "#2E7D32"
+        },
+        {
+          "value": "Not Attended",
+          "color": "#9E9E9E"
+        },
+        {
+          "value": "ATTENDED",
+          "color": "#1B5E20"
+        },
+        {
+          "value": "INVITED_ONLY",
+          "color": "#FF8F00"
+        },
+        {
+          "value": "NOT_INVITED",
+          "color": "#BDBDBD"
+        }
+      ]
+    },
+    "applyModeEnabled": false
+  }
+}
