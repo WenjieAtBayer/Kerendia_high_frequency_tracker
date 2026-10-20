@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "6"
+# ///
 # DBTITLE 1,Configuration
 # SP_POC Refresh Notebook
 # Refreshes managed tables in ph-com-ai-us-prod-catalog-2553213839599380.sp_poc
@@ -38,7 +42,7 @@ V6_TABLE = f"{CATALOG}.kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6"
 # MAGIC %sql
 # MAGIC -- ETL: kerendia_laad_based_lrx_v6 → fact_rx_hcp_week
 # MAGIC -- Join: v6.NPI = hcp_xref.npi (v6.PROVIDER_ID is IQVIA ID, NOT NPI)
-# MAGIC -- Filters: PRODUCT_GROUP='KERENDIA', PAY_TYPE!='CASH', PERIOD_TYPE IN ('W','X'), rx_matchable=TRUE
+# MAGIC -- Filters: PRODUCT_GROUP='KERENDIA', PERIOD_TYPE IN ('W','X'), rx_matchable=TRUE (cash-pay included)
 # MAGIC -- Aggregation: SUM(NBRX) GROUP BY npi, week_ending_date, indication_group
 # MAGIC
 # MAGIC CREATE OR REPLACE TABLE `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.fact_rx_hcp_week AS
@@ -51,7 +55,6 @@ V6_TABLE = f"{CATALOG}.kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6"
 # MAGIC INNER JOIN `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.hcp_xref x
 # MAGIC   ON v6.NPI = x.npi AND x.rx_matchable = TRUE
 # MAGIC WHERE v6.PRODUCT_GROUP = 'KERENDIA'
-# MAGIC   AND v6.PAY_TYPE != 'CASH'
 # MAGIC   AND v6.PERIOD_TYPE IN ('W', 'X')
 # MAGIC GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 

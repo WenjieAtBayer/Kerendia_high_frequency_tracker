@@ -500,7 +500,7 @@
               "lines": [
                 "## Kerendia Speaker Program\n",
                 "### High-Frequency Performance Tracker\n",
-                "*NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP (rolling monthly cohorts, all programs). New Writer = zero Kerendia NBRx in 12 months pre-event who wrote post-window. Data refreshes weekly with v6 source.*"
+                "*NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP (rolling monthly cohorts, all programs). New Writer = zero Kerendia NBRx in 12 months pre-event who wrote post-window. Data refreshes weekly with v6 source. All pay types incl. cash-pay.*"
               ]
             }
           },
@@ -2681,8 +2681,16 @@
                       "expression": "`alert_month`"
                     },
                     {
-                      "name": "measure(npis_alerted)",
+                      "name": "npis_alerted",
                       "expression": "MEASURE(`npis_alerted`)"
+                    },
+                    {
+                      "name": "invitations_sent_60d",
+                      "expression": "MEASURE(`invitations_sent_60d`)"
+                    },
+                    {
+                      "name": "programs_attended_60d",
+                      "expression": "MEASURE(`programs_attended_60d`)"
                     }
                   ],
                   "disaggregated": false
@@ -2697,30 +2705,27 @@
                   "fields": []
                 }
               },
-              "version": 3,
-              "widgetType": "bar",
+              "version": 1,
+              "jsonSpec": {
+                "type": "vega-lite",
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"transform\":[{\"fold\":[\"npis_alerted\",\"invitations_sent_60d\",\"programs_attended_60d\"],\"as\":[\"stage\",\"count\"]},{\"calculate\":\"datum.stage === 'npis_alerted' ? 'Alerted' : datum.stage === 'invitations_sent_60d' ? 'Invited (60d)' : 'Attended (60d)'\",\"as\":\"Stage\"}],\"layer\":[{\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}}},{\"mark\":{\"type\":\"text\",\"dy\":-8,\"fontSize\":10},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\"},\"text\":{\"field\":\"count\",\"type\":\"quantitative\"}}}],\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"Stage\",\"type\":\"nominal\",\"sort\":[\"Alerted\",\"Invited (60d)\",\"Attended (60d)\"]},\"color\":{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Funnel Stage\",\"scale\":{\"domain\":[\"Alerted\",\"Invited (60d)\",\"Attended (60d)\"],\"range\":[\"#1565C0\",\"#F9A825\",\"#2E7D32\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Stage\"},{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}]}}"
+              },
+              "widgetType": "custom-vega-viz",
               "encodings": {
-                "x": {
-                  "fieldName": "alert_month",
-                  "displayName": "alert_month",
-                  "scale": {
-                    "type": "categorical"
+                "fields": [
+                  {
+                    "fieldName": "alert_month"
+                  },
+                  {
+                    "fieldName": "npis_alerted"
+                  },
+                  {
+                    "fieldName": "invitations_sent_60d"
+                  },
+                  {
+                    "fieldName": "programs_attended_60d"
                   }
-                },
-                "y": {
-                  "fieldName": "measure(npis_alerted)",
-                  "displayName": "npis_alerted",
-                  "scale": {
-                    "type": "quantitative"
-                  }
-                },
-                "color": {
-                  "fieldName": "alert_month",
-                  "displayName": "alert_month",
-                  "scale": {
-                    "type": "categorical"
-                  }
-                }
+                ]
               },
               "data": {
                 "queryName": "main_query"
@@ -2729,7 +2734,7 @@
           },
           "position": {
             "x": 0,
-            "y": 6,
+            "y": 2,
             "width": 12,
             "height": 4
           }
@@ -2756,7 +2761,7 @@
             "multilineTextboxSpec": {
               "lines": [
                 "### Early Read (4-Week Signal)\n",
-                "*Invite/Attend windows: 30 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 28 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 4-week post-window.*"
+                "*Invite/Attend windows: 30 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 28 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 4-week post-window. All pay types incl. cash-pay.*"
               ]
             }
           },
@@ -2817,7 +2822,7 @@
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -2895,7 +2900,7 @@
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -2929,7 +2934,7 @@
             "multilineTextboxSpec": {
               "lines": [
                 "### Mature View (12-Week Durability)\n",
-                "*Invite/Attend windows: 60 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 84 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 12-week post-window. July 2026 cohort's 12-week window closes October 2026 — data will populate as cohorts mature.*"
+                "*Invite/Attend windows: 60 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 84 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 12-week post-window. All pay types incl. cash-pay. July 2026 cohort's 12-week window closes October 2026 — data will populate as cohorts mature.*"
               ]
             }
           },
@@ -2990,7 +2995,7 @@
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Avg NBRx Lift\",\"axis\":{\"format\":\".2f\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"avg_nbrx_lift\",\"type\":\"quantitative\",\"title\":\"Lift\",\"format\":\".2f\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -3068,7 +3073,7 @@
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement Level\",\"sort\":[\"Attended\",\"Invited\",\"Not Invited\"],\"axis\":{\"labelAngle\":0}},\"xOffset\":{\"field\":\"source_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"New Writer Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"engagement\",\"type\":\"nominal\",\"title\":\"Engagement\"},{\"field\":\"source_group\",\"type\":\"nominal\",\"title\":\"Source\"},{\"field\":\"new_writer_rate\",\"type\":\"quantitative\",\"title\":\"NW Rate\",\"format\":\".1%\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -3334,12 +3339,15 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Invitation Rate (60d) by Month & Group"
+                "title": {
+                  "value": "Invitation Rate (60d) by Month &amp; Group",
+                  "fields": []
+                }
               },
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invitation Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invite Rate\",\"format\":\".1%\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invitation Rate\",\"axis\":{\"format\":\".1%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invitation_rate_60d\",\"type\":\"quantitative\",\"title\":\"Invite Rate\",\"format\":\".1%\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -3362,7 +3370,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 6,
             "width": 6,
             "height": 4
           }
@@ -3404,7 +3412,7 @@
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite-to-Attend Rate\",\"axis\":{\"format\":\".0%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite→Attend\",\"format\":\".0%\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"sort\":[\"NBA\",\"Not NBA\"]},\"y\":{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite-to-Attend Rate\",\"axis\":{\"format\":\".0%\"}},\"color\":{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\",\"scale\":{\"domain\":[\"NBA\",\"Not NBA\"],\"range\":[\"#2E7D32\",\"#9E9E9E\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"nba_group\",\"type\":\"nominal\",\"title\":\"Group\"},{\"field\":\"invite_to_attend_60d\",\"type\":\"quantitative\",\"title\":\"Invite→Attend\",\"format\":\".0%\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -3427,7 +3435,7 @@
           },
           "position": {
             "x": 6,
-            "y": 2,
+            "y": 6,
             "width": 6,
             "height": 4
           }

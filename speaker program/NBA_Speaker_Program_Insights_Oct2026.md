@@ -1,5 +1,5 @@
 # Kerendia NBA × Speaker Program: Impact Insights
-**Date:** October 19, 2026 (updated October 20, 2026) | **Prepared by:** Analytics & AI Team | **Data through:** September 25, 2026
+**Date:** October 19, 2026 (updated October 20, 2026) | **Prepared by:** Decision Intelligence Team | **Data through:** September 25, 2026
 
 ---
 
@@ -8,6 +8,8 @@
 The Next Best Action (NBA) engine has been flagging high-potential HCPs for speaker program engagement since July 2026. This report measures what happens when those flagged HCPs are actually invited to — and attend — a speaker program, compared to those who are not invited.
 
 **Bottom line:** HCPs who attend a speaker program after an NBA alert show significantly higher prescribing activity than those who are not invited. The opportunity is clear — but the current bottleneck is the alert-to-invite conversion rate (<1% for NBA HCPs), not program effectiveness.
+
+**NBA vs Not NBA:** Compared with Segment A/B HCPs not flagged by NBA, NBA-flagged HCPs have roughly 2x the baseline prescribing, are somewhat more likely to be invited (0.8–1.0% vs 0.6–0.7%), and — for Segment A writers — show much larger lift after attending (+2.60 vs +0.17 in July). The alert alone does not change prescribing; the value comes from directing engagement to the right HCPs (Section 3c).
 
 ---
 
@@ -51,7 +53,7 @@ We measure Rx impact over two time horizons because prescribing behavior doesn't
 
 ## 3. Prescribing Impact by Segment
 
-> **Note:** The tables below cover **NBA HCPs only** (those with `nba_group = 'NBA'`). A Not NBA comparison is now available via the `nba_group` dimension in `mv_speaker_nba_rx`.
+> **Note:** The tables below cover **NBA HCPs only** (those with `nba_group = 'NBA'`). The NBA vs Not NBA comparison is in Section 3c.
 
 We report different metrics for each segment because they measure different things:
 
@@ -118,6 +120,52 @@ New writer = HCP with **zero Kerendia NBRx in the 12 months before the alert** w
 - **The 12-week mature read is critical for Segment B.** Non-writers typically need more time — the first eligible patient encounter, formulary check, prior authorization, and initial prescription may span 6–10 weeks. A 4-week window likely understates conversion for this segment.
 - Across both months, the base rate for Segment B not-invited is 0.3–0.4%, meaning the program needs to convert just 1 additional HCP out of ~6–12 to outperform the baseline — achievable but hard to measure with small n.
 
+### 3c. NBA vs Not NBA — Isolating NBA's Contribution
+
+To see what NBA adds, we compare NBA-flagged HCPs against **Not NBA** HCPs — Segment A/B HCPs in the same monthly cycle who were *not* flagged by NBA. Both groups use the same cycle date as the anchor, the same funnel definitions, and the same 4-week windows. Source: `mv_speaker_nba_rx`, split by `nba_group`.
+
+> **Note:** New-writer counts and rates in this section are pending reconfirmation (see the open item in the design doc). Lift and HCP counts are confirmed.
+
+#### Segment A (writers) — 4-week NBRx lift
+
+| Month | Cohort | NBA HCPs | NBA Pre → Post | **NBA Lift** | Not NBA HCPs | Not NBA Pre → Post | **Not NBA Lift** |
+|-------|--------|----------|----------------|--------------|--------------|--------------------|------------------|
+| July | Attended | 5 | 1.40 → 4.00 | **+2.60** | 6 | 0.33 → 0.50 | +0.17 |
+| July | Invited Only | 9 | 1.11 → 0.89 | −0.22 | 26 | 0.38 → 0.65 | +0.27 |
+| July | Not Invited | 3,006 | 0.081 → 0.084 | +0.004 | 7,105 | 0.045 → 0.046 | +0.000 |
+| August | Attended | 4 | 1.00 → 2.25 | **+1.25** | 10 | 0.70 → 0.30 | −0.40‡ |
+| August | Invited Only | 13 | 1.23 → 1.23 | 0.00 | 24 | 0.67 → 1.17 | +0.50‡ |
+| August | Not Invited | 2,376 | 0.097 → 0.127 | +0.03 | 7,806 | 0.044 → 0.056 | +0.01 |
+
+#### Segment B (non-writers) — 4-week new-writer conversion
+
+| Month | Cohort | NBA HCPs | NBA New Writers | **NBA NW Rate** | Not NBA HCPs | Not NBA New Writers | **Not NBA NW Rate** |
+|-------|--------|----------|-----------------|-----------------|--------------|---------------------|---------------------|
+| July | Attended | 0 | — | — | 13 | 4 | 30.8% |
+| July | Invited Only | 3 | 1 | 33.3% | 36 | 3 | 8.3% |
+| July | Not Invited | 1,332 | 4 | **0.30%** | 19,439 | 20 | 0.10% |
+| August | Attended | 6 | 0 | 0% | 19 | 2 | 10.5%‡ |
+| August | Invited Only | 12 | 1 | 8.3% | 36 | 0 | 0%‡ |
+| August | Not Invited | 3,849 | 14 | **0.36%** | 17,050 | 27 | 0.16% |
+
+*‡ Not NBA August invited/attended cohorts have 79–92% 4-week data coverage; treat as provisional.*
+
+#### Overall (all funnel stages, both segments)
+
+| Month | NBA HCPs | NBA 4w Lift | Not NBA HCPs | Not NBA 4w Lift | 60d Invite Rate (NBA vs Not NBA) |
+|-------|----------|-------------|--------------|-----------------|----------------------------------|
+| July | 4,355 | **+0.008** | 26,625 | +0.001 | **0.99%** vs 0.67% |
+| August | 6,260 | **+0.013** | 24,945 | +0.005 | **0.81%** vs 0.57% |
+
+**What this tells us about NBA's impact:**
+- **NBA picks higher-value HCPs.** Among HCPs who were *not* invited, NBA-flagged HCPs already write ~2x more Kerendia NBRx (Segment A: 0.081–0.097 vs 0.044–0.045 per HCP) and Segment B NBA HCPs convert to new writers at 2–3x the organic rate (0.30–0.36% vs 0.10–0.16%). NBA targeting is concentrating on HCPs with more prescribing potential.
+- **NBA HCPs are somewhat more likely to be invited** (0.8–1.0% vs 0.6–0.7%), but the gap is modest — field teams are not yet strongly prioritizing NBA alerts when filling speaker program slots.
+- **Segment A NBA attendees show far larger lift than Not NBA attendees** (+2.60 vs +0.17 in July; +1.25 vs −0.40 in August). NBA-flagged writers appear to respond more strongly to the program — the combination of NBA targeting plus attendance is where the lift concentrates.
+- **The alert alone does not move prescribing.** NBA HCPs who were not invited show near-zero lift (+0.004 to +0.03), similar to Not NBA. The value of NBA comes from *directing* engagement, not from the flag itself.
+- **Segment B tells a different story so far:** Not NBA attendees show early new-writer conversion (31% July, 11% August) while NBA Segment B attendees show none yet (0 of 6 in August, none attended in July). Sample sizes are very small and new-writer figures are pending reconfirmation, so this is not yet evidence against NBA for non-writers — the 12-week read is needed.
+
+**Caveats:** This is an observational comparison, not a randomized test. NBA and Not NBA HCPs differ at baseline (NBA HCPs prescribe more before the alert), so differences in lift partly reflect who NBA selects, not only the program effect. Attended cohorts are 4–19 HCPs per cell; results are directional.
+
 ---
 
 ## 4. Territory Highlights (Segment A, Attended)
@@ -150,6 +198,7 @@ The automated weekly refresh pipeline is now in place — as new Rx data arrives
 ### What's Working
 - **Segment A (writers) show strong lift after attending** — prescribing volume nearly triples in July, doubles in August
 - **Invite-to-attend conversion (~25–30%)** is healthy — once invited, HCPs respond
+- **NBA targets higher-value HCPs** — NBA-flagged HCPs have ~2x the baseline NBRx of Not NBA Segment A/B HCPs, and NBA Segment A attendees show far larger lift than Not NBA attendees
 - **Segment B requires patience** — the 4-week window is too short to judge non-writer conversion; the 12-week mature read will be the real test
 
 ### The Opportunity
@@ -161,7 +210,8 @@ The automated weekly refresh pipeline is now in place — as new Rx data arrives
 1. **Increase speaker program capacity** in territories with high NBA alert density
 2. **Tighten the NBA-to-invite handoff** — ensure field teams act on NBA alerts within the first 30 days
 3. **Track invite rates by territory** as a leading indicator of downstream Rx impact
-4. **Revisit Segment B in late November** when 12-week mature data is available
+4. **Prioritize NBA-flagged HCPs when filling slots** — the NBA vs Not NBA invite-rate gap is modest today (0.8–1.0% vs 0.6–0.7%), yet NBA Segment A attendees deliver the strongest lift
+5. **Revisit Segment B in late November** when 12-week mature data is available, including the NBA vs Not NBA new-writer comparison
 
 ---
 
@@ -191,6 +241,7 @@ Attended cohorts are small (5–10 HCPs per month). Results are directional, not
 | Term | Definition |
 |------|-----------|
 | **NBA Alert** | Monthly flag from the Next Best Action engine identifying HCPs with high potential for Kerendia prescribing. Issued on the 7th of each month. |
+| **Not NBA** | Segment A/B HCPs in the same monthly cycle who were not flagged by NBA (ALERT_FLAG = 0). Used as the comparison group, anchored on the same cycle date. |
 | **Funnel Stages** | ATTENDED = invited and attended a speaker program within 30 days of alert. INVITED_ONLY = invited but did not attend. NOT_INVITED = no invitation within 30 days. |
 | **NBRx Lift** | Per-HCP change in Kerendia new prescriptions: average 4-week post-window NBRx minus average 4-week pre-window NBRx. Positive = more scripts after. |
 | **New Writer** | HCP with zero Kerendia NBRx in the **12 months** before the alert who wrote at least one NBRx in the post-window. Uses NBRx (new scripts), not TRx (total scripts including refills). 12-month lookback ensures intermittent writers are not misclassified. |
@@ -201,6 +252,6 @@ Attended cohorts are small (5–10 HCPs per month). Results are directional, not
 | **Segment A** | Call plan segment "A_High_Potential_Writer" — HCPs with established Kerendia prescribing history. Report **lift** for this segment. |
 | **Segment B** | Call plan segment "B_High_Potential_Non_Writer" — HCPs with clinical potential but no recent Kerendia prescribing. Report **new-writer conversion** for this segment. Note: ~7.8% may have started writing since the segment was assigned (see Section 7a). |
 
-**Rx data source:** Kerendia NBRx from IQVIA LAAD-based LRx v6, excluding cash-pay, weekly grain.
+**Rx data source:** Kerendia NBRx from IQVIA LAAD-based LRx v6, all pay types including cash-pay (previously excluded; added Oct 20 — impact is negligible at 0.2% of total NBRx across 110 NPIs), weekly grain.
 
 *This report is generated from the [Kerendia Speaker Program Impact + NBA Genie space](https://dbc-7281de76-54c6.cloud.databricks.com/genie/rooms/01f1c9939e8a1648bbc09df186d37134). Data refreshes automatically when the upstream v6 table is updated.*
