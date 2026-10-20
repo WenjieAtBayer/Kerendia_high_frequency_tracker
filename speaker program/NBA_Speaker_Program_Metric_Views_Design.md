@@ -8,14 +8,14 @@
 
 ## 1. Initiative Overview
 
-The Kerendia P2P (Peer-to-Peer / Speaker Program) **NBA (Next Best Action)** initiative is a monthly alert system that recommends HCPs for speaker program invitations. Alerts are issued on the 7th of each month. The **universe** for both metric views is all Segment A and B HCPs (`CALL_PLAN_SEGMENT IN ('A_High_Potential_Writer', 'B_High_Potential_Non_Writer')`) present in each monthly cycle of the alerts table. Within that universe:
+The Kerendia P2P (Peer-to-Peer / Speaker Program) **NBA (Next Best Action)** initiative publishes a monthly **NBA dropdown list** in Veeva that recommends HCPs for speaker program invitations. The list is published on the 7th of each month (the NBA cycle date). The **universe** for both metric views is all Segment A and B HCPs (`CALL_PLAN_SEGMENT IN ('A_High_Potential_Writer', 'B_High_Potential_Non_Writer')`) present in each monthly cycle of the NBA list source table. Within that universe:
 
-- **NBA** (`is_nba = TRUE`, `nba_group = 'NBA'`): HCPs flagged with `ALERT_FLAG = 1` in that cycle — the system's top recommendations.
-- **Not NBA** (`is_nba = FALSE`, `nba_group = 'Not NBA'`): Segment A/B HCPs who were *not* flagged in that cycle. They serve as a concurrent same-segment comparison group, anchored to the same cycle date.
+- **NBA** (`is_nba = TRUE`, `nba_group = 'NBA'`): HCPs on the NBA dropdown list (`ALERT_FLAG = 1`) in that cycle — the system's top recommendations.
+- **Not NBA** (`is_nba = FALSE`, `nba_group = 'Not NBA'`): Segment A/B HCPs who were *not* on the NBA dropdown list in that cycle. They serve as a concurrent same-segment comparison group, anchored to the same cycle date.
 
 NBA coverage of the A/B universe is approximately 14% (July) to 20% (August onward).
 
-The reporting goal is end-to-end visibility from alert to prescription impact, with the ability to compare NBA-flagged HCPs against non-flagged peers:
+The reporting goal is end-to-end visibility from the NBA dropdown list to prescription impact, with the ability to compare NBA HCPs against Segment A/B peers not on the list:
 
 ```
 Segment A/B Universe → NBA vs Not NBA → Invitation Sent → Program Attendance → NBRx / New Writer
@@ -27,13 +27,15 @@ Segment A/B Universe → NBA vs Not NBA → Invitation Sent → Program Attendan
 
 | Table | Schema | Grain | Key Columns |
 |-------|--------|-------|-------------|
-| `kerendia_sp_nba_integration_alerts` | `kerendia_nba_3` | 1 row per HCP × scenario | `NPI_NUMBER` (double), `ALERT_DATE` (string), `ALERT_FLAG` (0 or 1), `CALL_PLAN_SEGMENT` |
+| `kerendia_sp_nba_integration_alerts` (NBA dropdown list source; table name is legacy) | `kerendia_nba_3` | 1 row per HCP × territory × scenario | `NPI_NUMBER` (double), `ALERT_DATE` (string), `ALERT_FLAG` (0 or 1), `CALL_PLAN_SEGMENT` |
 | `fact_attendance` | `sp_poc` | 1 row per NPI × event | `npi` (string), `event_date`, `attended_flag` (boolean) |
 | `fact_rx_hcp_week` | `sp_poc` | 1 row per NPI × week | `npi`, `week_ending_date`, `nbrx` |
 
-**NPI join key:** `CAST(CAST(NPI_NUMBER AS BIGINT) AS STRING)` — alerts store NPI as `DOUBLE`, requiring two-step cast to match the `STRING` NPI in other tables.
+**NPI join key:** `CAST(CAST(NPI_NUMBER AS BIGINT) AS STRING)` — the NBA list source stores NPI as `DOUBLE`, requiring two-step cast to match the `STRING` NPI in other tables.
 
-**Alert deduplication:** The alerts table contains rows for all segments (A, B, C, D, E, and NULL) with both `ALERT_FLAG = 0` (not flagged) and `ALERT_FLAG = 1` (flagged). The metric views filter to Segment A/B only and deduplicate to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `MAX(ALERT_FLAG)` to determine NBA status and `FIRST()` for segment, specialty, territory, region, and area. Per-cycle totals: ~26k–31k A/B HCPs per month, of which ~4,300–6,200 are NBA-flagged.
+**NBA list deduplication:** The NBA list source table contains rows for all segments (A, B, C, D, E, and NULL) with both `ALERT_FLAG = 0` (not on the NBA list) and `ALERT_FLAG = 1` (on the NBA list). The metric views filter to Segment A/B only and deduplicate to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `MAX(ALERT_FLAG)` to determine NBA status and `FIRST()` for segment, specialty, region, and area (these never vary across an HCP's rows). Per-cycle totals: ~26k–31k A/B HCPs per month, of which ~4,300–6,200 are on the NBA dropdown list.
+
+**Shared HCPs and territory (updated Oct 20, 2026):** About 80% of NBA HCPs are aligned to 2–4 territories (`TERR_ID`), and each aligned territory sees the HCP on its own list. The earlier `FIRST(TERR_DESC) AS territory` picked one territory arbitrarily and has been removed. HCP-grain views now expose `aligned_territories`, `n_aligned_territories`, and `is_shared_hcp`. Territory analysis uses the new `mv_speaker_nba_territory` (see the Territory Adoption addendum at the end).
 
 ---
 
@@ -43,20 +45,20 @@ Segment A/B Universe → NBA vs Not NBA → Invitation Sent → Program Attendan
 
 | Question | Answer |
 |----------|--------|
-| Can `mv_speaker_lift` (existing) cover NBA? | No — it anchors pre/post windows to the **event date**, not the alert date. It also only covers the invited cohort, not the full NBA-alerted population. |
-| Should we extend `mv_speaker_nba` with Rx? | Source SQL would become prohibitively complex with a three-way join (alerts × attendance × weekly Rx). Separate views keep each focused. |
+| Can `mv_speaker_lift` (existing) cover NBA? | No — it anchors pre/post windows to the **event date**, not the NBA cycle date. It also only covers the invited cohort, not the full population on the NBA dropdown list. |
+| Should we extend `mv_speaker_nba` with Rx? | Source SQL would become prohibitively complex with a three-way join (NBA list × attendance × weekly Rx). Separate views keep each focused. |
 
 **Decision:** Two views — `mv_speaker_nba` for the invitation/attendance funnel, `mv_speaker_nba_rx` for Rx effectiveness.
 
 ### 3.2 Invitation window: 30 days vs 60 days
 
-Analysis of July 2026 alerts showed:
+Analysis of the July 2026 NBA dropdown list showed:
 
 | Window | NPIs Invited | NPIs Attended |
 |--------|-------------|---------------|
 | 30 days | 17 | 5 |
 | 60 days | 43 | 12 |
-| Any time after alert | 59 | 15 |
+| Any time after cycle date | 59 | 15 |
 
 The 60-day window captures 2.5× more invitations. However, for early-read purposes, 30 days is sufficient as a "quick signal" indicator.
 
@@ -64,10 +66,10 @@ The 60-day window captures 2.5× more invitations. However, for early-read purpo
 
 ### 3.3 Rx window: 4 weeks vs 12 weeks
 
-Rx data (`fact_rx_hcp_week`) lags — as of October 2026 it extends only to August 28, 2026. A 12-week post-window for July alerts requires data through late September.
+Rx data (`fact_rx_hcp_week`) lags — as of October 2026 it extends only to August 28, 2026. A 12-week post-window for the July cycle requires data through late September.
 
 **Decision:** Dual-window design in `mv_speaker_nba_rx`:
-- **4-week (early read)** — provides actionable signal within ~6 weeks of alert
+- **4-week (early read)** — provides actionable signal within ~6 weeks of the cycle date
 - **12-week (mature)** — the definitive measurement once data coverage is complete
 
 ### 3.4 Attendance window for mature metrics: 30 days → 60 days
@@ -78,14 +80,14 @@ The earlier funnel analysis showed that widening the attendance window from 30 t
 
 ### 3.5 Adaptive post-anchor
 
-The post-Rx measurement window should not always start from the alert date. An HCP who attended a program 25 days after the alert needs their post-NBRx measured from the event, not from 25 days earlier.
+The post-Rx measurement window should not always start from the NBA cycle date. An HCP who attended a program 25 days after the cycle date needs their post-NBRx measured from the event, not from 25 days earlier.
 
 **Decision:** `post_anchor_date` adapts per HCP:
-- First attended event date (if attended) → first invite date (if invited only) → alert date (if never invited)
+- First attended event date (if attended) → first invite date (if invited only) → NBA cycle date (if never invited)
 
 ### 3.6 Not NBA comparison group
 
-To evaluate whether NBA flagging itself adds value, we need a concurrent comparison group of similar HCPs who were *not* flagged. The alerts table already contains `ALERT_FLAG = 0` rows for Segment A/B HCPs not selected by the model in each cycle, providing a natural non-flagged pool.
+To evaluate whether the NBA dropdown list itself adds value, we need a concurrent comparison group of similar HCPs who were *not* on it. The NBA list source table already contains `ALERT_FLAG = 0` rows for Segment A/B HCPs not selected by the model in each cycle, providing a natural comparison pool.
 
 **Decision:** Expand the metric view universe from NBA-only (`ALERT_FLAG = 1`) to all Segment A/B HCPs per cycle. Derive:
 - `is_nba = MAX(ALERT_FLAG) = 1` per NPI × cycle (boolean)
@@ -95,9 +97,9 @@ Not NBA HCPs are anchored to the same cycle date (the 7th of each month) for all
 
 ### 3.7 Deduplication of `mv_speaker_nba`
 
-The original `mv_speaker_nba` grouped by `npi, alert_date, alert_month, call_plan_segment, specialty, territory, region, area` but did not collapse the multiple scenario rows per HCP in the alerts table. This produced ~7,900–10,500 rows per month for ~4,300–6,200 distinct NPIs (1.8× inflation). Funnel counts were overstated — e.g., July showed 76 "invited" rows vs 43 actual NPIs invited (60d window).
+The original `mv_speaker_nba` grouped by `npi, alert_date, alert_month, call_plan_segment, specialty, territory, region, area` but did not collapse the multiple scenario rows per HCP in the NBA list source table. This produced ~7,900–10,500 rows per month for ~4,300–6,200 distinct NPIs (1.8× inflation). Funnel counts were overstated — e.g., July showed 76 "invited" rows vs 43 actual NPIs invited (60d window).
 
-**Decision:** Deduplicate the inner alerts subquery to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `FIRST()` for dimension columns. This aligns `mv_speaker_nba` with the grain of `mv_speaker_nba_rx` (which already deduplicated). The `fact_attendance` join is now restricted to `event_date BETWEEN alert_date AND alert_date + 60` for consistency.
+**Decision:** Deduplicate the inner NBA list subquery to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `FIRST()` for dimension columns. This aligns `mv_speaker_nba` with the grain of `mv_speaker_nba_rx` (which already deduplicated). The `fact_attendance` join is now restricted to `event_date BETWEEN alert_date AND alert_date + 60` for consistency.
 
 ---
 
@@ -106,7 +108,7 @@ The original `mv_speaker_nba` grouped by `npi, alert_date, alert_month, call_pla
 ### 4.1 `mv_speaker_nba` — Invitation & Attendance Funnel
 
 ```
-Alert Date
+NBA Cycle Date (alert_date)
     │
     ├──── 30 days ────┤  ← invited_within_30d / attended_within_30d
     │                 │
@@ -116,7 +118,7 @@ Alert Date
  Jul 7                             Sep 5
 ```
 
-Grain: 1 row per Segment A/B NPI × cycle date. Boolean flags for each window. Includes both NBA-flagged and non-flagged HCPs; use `nba_group` to distinguish.
+Grain: 1 row per Segment A/B NPI × cycle date. Boolean flags for each window. Includes both HCPs on the NBA dropdown list and Segment A/B HCPs not on it; use `nba_group` to distinguish.
 
 ### 4.2 `mv_speaker_nba_rx` — Early-Read (4-week Rx)
 
@@ -213,7 +215,7 @@ Aggregate measures `pct_4w_covered` and `pct_12w_covered` show the percentage of
 
 **Coverage snapshot (post-refresh, Oct 19 2026 — Rx data through Sep 25):**
 
-| Alert Month | 4w Coverage | 12w Coverage |
+| NBA Cycle Month | 4w Coverage | 12w Coverage |
 |-------------|-------------|--------------|
 | July 2026 | **100%** | 0% (needs Sep 29 — 4 days short) |
 | August 2026 | **96–100%** | 0% |
@@ -254,9 +256,9 @@ Overall 4w lift: NBA +0.013 vs Not NBA +0.005.
 
 **Key insight:** NBA ATTENDED cohorts show the largest lift (+2.60 in July, +0.40 in August). Not NBA ATTENDED HCPs also show positive lift (+0.32 and +0.21) but smaller than NBA, suggesting NBA flagging may identify higher-potential HCPs. Both groups dramatically outperform their respective NOT_INVITED baselines.
 
-### Alert-to-Invite Funnel (all months, 60-day window, NBA vs Not NBA)
+### NBA List-to-Invite Funnel (all months, 60-day window, NBA vs Not NBA)
 
-| Alert Month | Group | NPIs | Invited | Attended | Invite Rate | Invite-to-Attend |
+| NBA Cycle Month | Group | NPIs | Invited | Attended | Invite Rate | Invite-to-Attend |
 |-------------|-------|------|---------|----------|-------------|-------------------|
 | July 2026 | **NBA** | 4,355 | 43 | 12 | 0.99% | 28% |
 | July 2026 | Not NBA | 26,625 | 178 | 51 | 0.67% | 29% |
@@ -271,7 +273,7 @@ NBA HCPs have a slightly higher invite rate than Not NBA peers (<1% vs ~0.2–0.
 
 ### Top Territories
 
-New Orleans (S LA Striker, W LA), Phoenix Central, and Mid-Atlantic showed the best end-to-end conversion from NBA alert to actual attendance.
+New Orleans (S LA Striker, W LA), Phoenix Central, and Mid-Atlantic showed the best end-to-end conversion from the NBA dropdown list to actual attendance. *(Note: this territory ranking was based on the old arbitrary territory pick; re-check with `mv_speaker_nba_territory`.)*
 
 ### Data Refresh Log
 
@@ -292,14 +294,18 @@ New Orleans (S LA Striker, W LA), Phoenix Central, and Mid-Atlantic showed the b
 | Dimension | `is_nba` / `nba_group` | NBA flag (boolean) / group label ('NBA' or 'Not NBA') |
 | Dimension | `call_plan_segment` | A or B segment |
 | Dimension | `specialty` | HCP specialty |
-| Dimension | `territory` / `region` / `area` | Sales geography |
+| Dimension | `aligned_territories` / `n_aligned_territories` / `is_shared_hcp` | All territories with the HCP on their NBA dropdown list (replaces the removed `territory`) |
+| Dimension | `inviting_territory` / `inviting_rep` | Veeva event owner territory and rep for the HCP's first invite within 60d |
+| Dimension | `invited_by_aligned_territory_30d` / `_60d` | Invited to an event owned by a territory that has the HCP on its list |
+| Dimension | `region` / `area` | Sales geography |
 | Dimension | `invited_within_30d` / `60d` | Invitation flag |
 | Dimension | `attended_within_30d` / `60d` | Attendance flag |
 | Measure | `hcp_cycles` | Total A/B HCP x cycle rows |
 | Measure | `npis_universe` | Distinct A/B NPIs (NBA + Not NBA) |
-| Measure | `alerts` / `npis_alerted` | NBA-flagged rows / distinct NPIs (FILTER WHERE is_nba) |
-| Measure | `npis_not_nba` | Distinct NPIs not flagged by NBA |
-| Measure | `nba_coverage_rate` | Share of A/B universe flagged by NBA |
+| Measure | `alerts` / `npis_alerted` | Rows / distinct NPIs on the NBA dropdown list (FILTER WHERE is_nba). Column names are legacy; display names are "NBA HCP-Cycles" / "NBA HCPs" |
+| Measure | `npis_not_nba` | Distinct NPIs not on the NBA dropdown list |
+| Measure | `nba_coverage_rate` | Share of A/B universe on the NBA dropdown list |
+| Measure | `shared_hcps`, `invitations_by_aligned_territory_60d`, `pct_invites_from_aligned_territory_60d` | Shared-HCP count and share of invites sent by a territory that has the HCP on its list |
 | Measure | `invitations_sent_30d` / `60d` | Invited HCP x cycle rows (generic; split by nba_group) |
 | Measure | `invitation_rate_30d` / `60d` | Invite % (generic; split by nba_group) |
 | Measure | `programs_attended_30d` / `60d` | Attended HCP x cycle rows (generic; split by nba_group) |
@@ -441,7 +447,8 @@ The v6 source has 4 new weeks (Sep 4, 11, 18, 25) not yet in the fact table. Ref
 | Table | Refresh Trigger | Cadence | Dependencies |
 |-------|----------------|---------|-------------|
 | `hcp_xref` | New segment lists or roster changes | Quarterly | None (independent dim) |
-| `fact_attendance` | New speaker program events | Monthly (after each NBA alert) | hcp_xref (for segment/territory) |
+| `fact_attendance` | New speaker program events | Monthly (after each NBA cycle) | hcp_xref (for segment/territory) |
+| `dim_event_owner` | Veeva event owner (rep) and territory | Weekly (SP_POC_Refresh) | cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY |
 | `fact_calls` | New Veeva call data | Monthly | hcp_xref (for NPI bridge) |
 | `fact_rx_hcp_week` | v6 table refresh | **Weekly** (when v6 updates) | hcp_xref (for rx_matchable filter) |
 | `fact_trx_hcp_month` | Xponent monthly refresh | Monthly | hcp_xref (for rx_matchable filter) |
@@ -464,4 +471,34 @@ The v6 source has 4 new weeks (Sep 4, 11, 18, 25) not yet in the fact table. Ref
 1. Documents each CTAS query with source table, filters, and join logic
 2. Accepts a parameter for the v6 table version (in case v7/v8 is published)
 3. Logs refresh timestamps and row counts for auditability
-4. Can be scheduled as a monthly Lakeflow Job after each NBA alert cycle
+4. Can be scheduled as a monthly Lakeflow Job after each NBA cycle
+---
+
+## Addendum: Territory Adoption — `mv_speaker_nba_territory` (Oct 20, 2026)
+
+**Question:** How many reps (territories) act on their NBA dropdown list?
+
+**Problem:** HCPs are shared. About 80% of NBA HCPs are aligned to 2–4 territories (`TERR_ID`), and any of them can invite the HCP. `fact_attendance.territory` is the HCP's single primary alignment, not the inviter.
+
+**Inviting rep source:** `cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY` (Veeva). `TERRITORY_NAME` and `EMPLOYEE_NAME` are event-level: the **event owner**, i.e. the rep who requested the speaker program. QC: territory never varies across attendees of one event; `EVENT_ID` joins 100% to `fact_attendance.event_id`; 252 of 253 events since July 2026 have an owner territory; the 4-character code (e.g. `124B` in `124B - Downey, CA Iss`) matches `TERR_ID` in the NBA list. Materialized as `sp_poc.dim_event_owner` (event_id, owner_territory_id, owner_territory, owner_territory_type, owner_rep, owner_employee_id, team_member_count), refreshed in SP_POC_Refresh.
+
+**View:** `mv_speaker_nba_territory`, grain = 1 row per NPI × cycle date × aligned territory (`TERR_ID <> 'UNASSIGNED'`).
+
+| Type | Name | Description |
+|------|------|-------------|
+| Dimension | `territory_id`, `territory`, `region`, `area` | Aligned territory (proxy for rep) |
+| Dimension | `nba_group`, `call_plan_segment`, `alert_month` | Same as other NBA views |
+| Dimension | `invited_by_this_territory_30d` / `_60d` | This territory owned an event the HCP was invited to within the window |
+| Dimension | `invited_any_60d`, `is_shared_hcp`, `n_aligned_territories` | Invited by anyone; sharing |
+| Measure | `territories` | Distinct territories with HCPs on their list |
+| Measure | `territories_acting_30d` / `_60d` | Distinct territories that invited at least one HCP on their own list to an event they own |
+| Measure | `territory_action_rate_30d` / `_60d` | territories_acting / territories |
+| Measure | `territories_with_attendee_60d` | Territories with a listed HCP who attended one of their events |
+| Measure | `hcps_on_list`, `hcp_territory_assignments`, `avg_hcps_per_territory` | List size |
+| Measure | `hcps_invited_60d`, `hcps_invited_by_aligned_territory_60d` | Distinct HCPs invited by anyone / by an aligned territory |
+
+**Results (NBA, 60d):** July 26 of 693 territories acted (3.8%), August 29 of 666 (4.4%), September 11 of 656 (1.7%, window incomplete). 67–78% of invited NBA HCPs were invited by a territory that has them on its list.
+
+**Limitations:** Credit goes to the event owner; co-hosts can also add attendees, but the per-attendee inviter isn't recorded. Territory is a proxy for the rep.
+
+**Rollback:** Prior DDL of `mv_speaker_nba` and `mv_speaker_nba_rx` is saved in `sp_poc._mv_ddl_backup`.

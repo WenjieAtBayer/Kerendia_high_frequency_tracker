@@ -162,7 +162,7 @@
     },
     {
       "name": "lmv_nba",
-      "displayName": "NBA Alerts (LMV)",
+      "displayName": "NBA Dropdown List (LMV)",
       "config": {
         "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_nba",
@@ -483,6 +483,46 @@
         "measures": [
           {
             "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmv_nba_territory",
+      "displayName": "NBA Territory Adoption (LMV)",
+      "config": {
+        "version": "1.1",
+        "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_nba_territory",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "source.* EXCEPT (territory_action_rate_30d, territory_action_rate_60d)"
+          },
+          {
+            "name": "territory_action_rate_30d",
+            "expr": "MEASURE(source.territory_action_rate_30d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "territory_action_rate_60d",
+            "expr": "MEASURE(source.territory_action_rate_60d)",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
           }
         ]
       }
@@ -879,11 +919,13 @@
                 "columns": [
                   {
                     "fieldName": "alert_month",
-                    "headerAlignment": "left"
+                    "headerAlignment": "left",
+                    "displayName": "NBA Cycle Month"
                   },
                   {
                     "fieldName": "measure(npis_alerted)",
-                    "headerAlignment": "right"
+                    "headerAlignment": "right",
+                    "displayName": "NPIs on List"
                   },
                   {
                     "fieldName": "measure(invitations_sent_60d)",
@@ -1461,6 +1503,7 @@
                   "fields": [
                     {
                       "fieldName": "alert_month",
+                      "displayName": "NBA Cycle Month",
                       "scale": {
                         "type": "categorical"
                       }
@@ -2282,7 +2325,7 @@
                 "## Engagement Journey\n",
                 "*Where does the funnel leak? What's the conversion path?*\n",
                 "\n",
-                "**NBA Funnel:** Alert → Invitation (60d window) → Attendance (60d window). The bottleneck is alert-to-invite (~1–2%), not invite-to-attend (~25–30%). Counts show absolute HCPs at each stage; conversion % is invite-to-attend rate."
+                "**NBA Funnel:** NBA List → Invitation (60d window) → Attendance (60d window). The bottleneck is list-to-invite (~1–2%), not invite-to-attend (~25–30%). Counts show absolute HCPs at each stage; conversion % is invite-to-attend rate."
               ]
             }
           },
@@ -2344,13 +2387,16 @@
               "encodings": {
                 "columns": [
                   {
-                    "fieldName": "alert_month"
+                    "fieldName": "alert_month",
+                    "displayName": "NBA Cycle Month"
                   },
                   {
-                    "fieldName": "measure(alerts)"
+                    "fieldName": "measure(alerts)",
+                    "displayName": "NBA List Entries"
                   },
                   {
-                    "fieldName": "measure(npis_alerted)"
+                    "fieldName": "measure(npis_alerted)",
+                    "displayName": "NPIs on List"
                   },
                   {
                     "fieldName": "measure(invitations_sent_60d)"
@@ -2382,48 +2428,67 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "lmv_nba",
+                  "datasetName": "lmv_nba_territory",
                   "fields": [
                     {
                       "name": "territory",
                       "expression": "`territory`"
                     },
                     {
-                      "name": "measure(invitations_sent_60d)",
-                      "expression": "MEASURE(`invitations_sent_60d`)"
+                      "name": "measure(hcps_invited_by_aligned_territory_60d)",
+                      "expression": "MEASURE(`hcps_invited_by_aligned_territory_60d`)"
                     }
                   ],
-                  "disaggregated": false
+                  "filters": [
+                    {
+                      "expression": "`nba_group` IN ('NBA')"
+                    }
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "MEASURE(`hcps_invited_by_aligned_territory_60d`)"
+                    }
+                  ]
                 }
               }
             ],
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Invitations Sent by Territory"
+                "showDescription": true,
+                "title": "Territories Inviting HCPs from Their NBA List (60d)",
+                "description": {
+                  "value": "Credit = territory of the rep who owns the speaker program event in Veeva. Top 20 territories, NBA-targeted HCPs only.",
+                  "fields": []
+                }
               },
               "version": 3,
               "widgetType": "bar",
               "encodings": {
                 "x": {
                   "fieldName": "territory",
-                  "displayName": "territory",
+                  "displayName": "Territory",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 20
+                    },
+                    "sort": {
+                      "by": "measure-reversed",
+                      "measure": {
+                        "fieldName": "measure(hcps_invited_by_aligned_territory_60d)"
+                      }
+                    }
                   }
                 },
                 "y": {
-                  "fieldName": "measure(invitations_sent_60d)",
-                  "displayName": "Invitations Sent",
+                  "fieldName": "measure(hcps_invited_by_aligned_territory_60d)",
+                  "displayName": "HCPs Invited (60d)",
                   "scale": {
                     "type": "quantitative"
-                  }
-                },
-                "color": {
-                  "fieldName": "territory",
-                  "displayName": "territory",
-                  "scale": {
-                    "type": "categorical"
                   }
                 }
               },
@@ -2464,17 +2529,14 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": {
-                  "value": "Monthly Alert Volume Trend",
-                  "fields": []
-                }
+                "title": "Monthly NBA List Volume Trend"
               },
               "version": 3,
               "widgetType": "line",
               "encodings": {
                 "x": {
                   "fieldName": "alert_month",
-                  "displayName": "alert_month",
+                  "displayName": "NBA Cycle Month",
                   "scale": {
                     "type": "categorical"
                   }
@@ -2488,7 +2550,7 @@
                 },
                 "color": {
                   "fieldName": "alert_month",
-                  "displayName": "alert_month",
+                  "displayName": "NBA Cycle Month",
                   "scale": {
                     "type": "categorical"
                   }
@@ -2654,9 +2716,9 @@
             "multilineTextboxSpec": {
               "lines": [
                 "## NBA Initiative Spotlight\n",
-                "*Is the targeted alert-to-attend pathway driving measurable Rx impact?*\n",
+                "*Is the targeted list-to-attend pathway driving measurable Rx impact?*\n",
                 "\n",
-                "NBA alerts began **July 2026**. HCPs are classified by engagement depth: **Attended** (alert → invite → program), **Invited Only** (alert → invite, no program), **Not Invited** (alert only, no invite). Each section compares Rx behavior change across these three cohorts to isolate the incremental value of deeper engagement."
+                "The NBA dropdown list began **July 2026**. HCPs are classified by engagement depth: **Attended** (NBA list → invite → program), **Invited Only** (NBA list → invite, no program), **Not Invited** (on NBA list, no invite). Each section compares Rx behavior change across these three cohorts to isolate the incremental value of deeper engagement."
               ]
             }
           },
@@ -2700,15 +2762,12 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": {
-                  "value": "NBA Funnel by Month",
-                  "fields": []
-                }
+                "title": "NBA Funnel by Month"
               },
               "version": 1,
               "jsonSpec": {
                 "type": "vega-lite",
-                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"transform\":[{\"fold\":[\"npis_alerted\",\"invitations_sent_60d\",\"programs_attended_60d\"],\"as\":[\"stage\",\"count\"]},{\"calculate\":\"datum.stage === 'npis_alerted' ? 'Alerted' : datum.stage === 'invitations_sent_60d' ? 'Invited (60d)' : 'Attended (60d)'\",\"as\":\"Stage\"}],\"layer\":[{\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}}},{\"mark\":{\"type\":\"text\",\"dy\":-8,\"fontSize\":10},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\"},\"text\":{\"field\":\"count\",\"type\":\"quantitative\"}}}],\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"Stage\",\"type\":\"nominal\",\"sort\":[\"Alerted\",\"Invited (60d)\",\"Attended (60d)\"]},\"color\":{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Funnel Stage\",\"scale\":{\"domain\":[\"Alerted\",\"Invited (60d)\",\"Attended (60d)\"],\"range\":[\"#1565C0\",\"#F9A825\",\"#2E7D32\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Stage\"},{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}]}}"
+                "spec": "{\"$schema\":\"https://vega.github.io/schema/vega-lite/v6.json\",\"data\":{\"name\":\"databricks_query\"},\"width\":\"container\",\"height\":\"container\",\"config\":{\"autosize\":{\"type\":\"fit\",\"contains\":\"padding\"},\"axis\":{\"grid\":false}},\"transform\":[{\"fold\":[\"npis_alerted\",\"invitations_sent_60d\",\"programs_attended_60d\"],\"as\":[\"stage\",\"count\"]},{\"calculate\":\"datum.stage === 'npis_alerted' ? 'On NBA List' : datum.stage === 'invitations_sent_60d' ? 'Invited (60d)' : 'Attended (60d)'\",\"as\":\"Stage\"}],\"layer\":[{\"mark\":{\"type\":\"bar\",\"cornerRadiusTopLeft\":3,\"cornerRadiusTopRight\":3},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}}},{\"mark\":{\"type\":\"text\",\"dy\":-8,\"fontSize\":10},\"encoding\":{\"y\":{\"field\":\"count\",\"type\":\"quantitative\"},\"text\":{\"field\":\"count\",\"type\":\"quantitative\"}}}],\"encoding\":{\"x\":{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"NBA Cycle Month\",\"timeUnit\":\"yearmonth\"},\"xOffset\":{\"field\":\"Stage\",\"type\":\"nominal\",\"sort\":[\"On NBA List\",\"Invited (60d)\",\"Attended (60d)\"]},\"color\":{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Funnel Stage\",\"scale\":{\"domain\":[\"On NBA List\",\"Invited (60d)\",\"Attended (60d)\"],\"range\":[\"#1565C0\",\"#F9A825\",\"#2E7D32\"]}},\"tooltip\":[{\"field\":\"alert_month\",\"type\":\"temporal\",\"title\":\"NBA Cycle Month\",\"timeUnit\":\"yearmonth\"},{\"field\":\"Stage\",\"type\":\"nominal\",\"title\":\"Stage\"},{\"field\":\"count\",\"type\":\"quantitative\",\"title\":\"HCPs\"}]}}"
               },
               "widgetType": "custom-vega-viz",
               "encodings": {
@@ -2761,7 +2820,7 @@
             "multilineTextboxSpec": {
               "lines": [
                 "### Early Read (4-Week Signal)\n",
-                "*Invite/Attend windows: 30 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 28 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 4-week post-window. All pay types incl. cash-pay.*"
+                "*Invite/Attend windows: 30 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 28 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months before the NBA cycle date who wrote within the 4-week post-window. All pay types incl. cash-pay.*"
               ]
             }
           },
@@ -2934,7 +2993,7 @@
             "multilineTextboxSpec": {
               "lines": [
                 "### Mature View (12-Week Durability)\n",
-                "*Invite/Attend windows: 60 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 84 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months pre-alert who wrote within the 12-week post-window. All pay types incl. cash-pay. July 2026 cohort's 12-week window closes October 2026 — data will populate as cohorts mature.*"
+                "*Invite/Attend windows: 60 days post-cycle date. NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP, measured 84 days after the anchor date. New Writer = zero Kerendia NBRx in 12 months before the NBA cycle date who wrote within the 12-week post-window. All pay types incl. cash-pay. July 2026 cohort's 12-week window closes October 2026 — data will populate as cohorts mature.*"
               ]
             }
           },
@@ -3154,25 +3213,43 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Data Coverage by Month & Cohort"
+                "title": {
+                  "value": "Data Coverage by Month &amp; Cohort",
+                  "fields": []
+                }
               },
-              "version": 3,
+              "version": 4,
               "widgetType": "pivot",
               "encodings": {
-                "rows": [
-                  {
-                    "fieldName": "alert_month"
-                  }
-                ],
-                "columns": [
-                  {
-                    "fieldName": "funnel_stage"
-                  }
-                ],
-                "cell": {
-                  "type": "single-cell",
-                  "fieldName": "measure(pct_4w_covered)",
-                  "cellType": "text"
+                "rows": {
+                  "fields": [
+                    {
+                      "fieldName": "alert_month",
+                      "displayName": "NBA Cycle Month",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "columns": {
+                  "fields": [
+                    {
+                      "fieldName": "funnel_stage",
+                      "scale": {
+                        "type": "categorical"
+                      }
+                    }
+                  ]
+                },
+                "cells": {
+                  "fields": [
+                    {
+                      "fieldName": "measure(pct_4w_covered)",
+                      "cellType": "text"
+                    }
+                  ],
+                  "displayAs": "rows"
                 }
               },
               "data": {
@@ -3438,6 +3515,53 @@
             "y": 6,
             "width": 6,
             "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_territory_action_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lmv_nba_territory",
+                  "fields": [
+                    {
+                      "name": "measure(territory_action_rate_60d)",
+                      "expression": "MEASURE(`territory_action_rate_60d`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`nba_group` IN ('NBA')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Territory Action Rate (60d)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(territory_action_rate_60d)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 34,
+            "width": 6,
+            "height": 2
           }
         }
       ],

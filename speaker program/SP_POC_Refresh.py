@@ -60,6 +60,29 @@ V6_TABLE = f"{CATALOG}.kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6"
 
 # COMMAND ----------
 
+# DBTITLE 1,Refresh dim_event_owner from Veeva events
+# MAGIC %sql
+# MAGIC -- ETL: cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY -> dim_event_owner
+# MAGIC -- One row per Kerendia speaker event with the event owner (requesting rep) and the owner's territory.
+# MAGIC -- QC (Oct 2026): territory is event-level (never varies across attendees of one event), EMPLOYEE_NAME = event owner,
+# MAGIC -- and event_id joins 100% to fact_attendance.event_id. Used to credit invitations to the territory that sent them.
+# MAGIC CREATE OR REPLACE TABLE `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.dim_event_owner
+# MAGIC COMMENT 'Kerendia speaker program events with the event owner (requesting rep) and owner territory, from Veeva via CPH ANALYTICS_V2. Join to fact_attendance on event_id. owner_territory_id matches the 4-character TERR_ID in the NBA dropdown list.'
+# MAGIC AS
+# MAGIC SELECT
+# MAGIC   EVENT_ID AS event_id,
+# MAGIC   MAX(TRIM(SPLIT(TERRITORY_NAME, ' - ')[0])) AS owner_territory_id,
+# MAGIC   MAX(TERRITORY_NAME) AS owner_territory,
+# MAGIC   MAX(TERRITORY_TYPE) AS owner_territory_type,
+# MAGIC   MAX(EMPLOYEE_NAME) AS owner_rep,
+# MAGIC   MAX(EMPLOYEE_ID) AS owner_employee_id,
+# MAGIC   MAX(TRY_CAST(PW_EVENT_TEAM_MEMBER AS INT)) AS team_member_count
+# MAGIC FROM cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY
+# MAGIC WHERE UPPER(PRODUCT_BRAND_NAME) LIKE '%KERENDIA%'
+# MAGIC GROUP BY EVENT_ID
+
+# COMMAND ----------
+
 # DBTITLE 1,Recompute pre_post_lift
 # MAGIC %sql
 # MAGIC -- Recompute per-NPI pre/post lift anchored to first attended event date.

@@ -32,7 +32,7 @@
 │  Dose-response · multi-event · rep follow-up                        │
 ├─────────────────────────────────────────────────────────────────────┤
 │  P5  ENGAGEMENT JOURNEY             ← What's the conversion path?   │
-│  Alert → invite → attend → Rx funnel · time-to-Rx                  │
+│  NBA list → invite → attend → Rx funnel · time-to-Rx               │
 ├─────────────────────────────────────────────────────────────────────┤
 │  P6  NBA INITIATIVE SPOTLIGHT       ← Is the newest initiative      │
 │  NBA-specific funnel · lift · coverage · compared to overall        │
@@ -81,14 +81,14 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 | Target Reach Rate | mv_speaker_attendance + mv_segment_universe | attendees / target_universe_hcps |
 | Avg NBRx Lift (Attended vs Control) | mv_speaker_lift | avg_post_nbrx - avg_pre_nbrx, attended vs not |
 | New Writers (YTD) | mv_speaker_lift | SUM(new_writers) for attended cohort |
-| NBA Alert-to-Attend Rate | mv_speaker_nba | attended / alerted (60d). **Filter: `nba_group = 'NBA'`** |
+| NBA List-to-Attend Rate | mv_speaker_nba | attended / HCPs on NBA dropdown list (60d). **Filter: `nba_group = 'NBA'`** |
 
 ### Trend Chart
 - Monthly NBRx lift trend (attended vs control) — mv_speaker_lift by anchor_month
 - Overlay: monthly attendance count — mv_speaker_attendance by event_month
 
 ### NBA Spotlight Card
-- Mini funnel: Alerted → Invited → Attended → Lift (latest month with coverage)
+- Mini funnel: On NBA List → Invited → Attended → Lift (latest month with coverage)
 - "Learn more →" links to Page 6
 
 ### Data Freshness Indicator
@@ -116,7 +116,7 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 ### Widget 2c: New-Writer Conversion (Segment B focus)
 - Source: mv_speaker_nba_rx (for NBA cohort) + mv_speaker_lift (for overall)
 - Funnel visual: total Seg B → attended → wrote first Rx
-- Filter: alert_month or anchor_quarter
+- Filter: NBA cycle month (`alert_month`) or anchor_quarter
 
 ### Widget 2d: 4-Week vs 12-Week Comparison (when available)
 - Source: mv_speaker_nba_rx
@@ -199,7 +199,7 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 
 ### Widget 5a: Full Journey Funnel (funnel chart)
 - Combines mv_segment_universe → mv_speaker_nba → mv_speaker_nba_rx
-- Stages: Segment A/B Universe (npis_universe from mv_speaker_nba) → NBA Alerted (npis_alerted) → Invited → Attended → Wrote Rx → Sustained Writer. **Filter: `nba_group = 'NBA'` for NBA-specific stages.**
+- Stages: Segment A/B Universe (npis_universe from mv_speaker_nba) → On NBA Dropdown List (npis_alerted) → Invited → Attended → Wrote Rx → Sustained Writer. **Filter: `nba_group = 'NBA'` for NBA-specific stages.**
 - Drop-off % at each stage
 
 ### Widget 5b: Time-to-First-Rx (histogram)
@@ -208,14 +208,15 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 - Answers: "How quickly does the program effect materialize?"
 - NOTE: Requires new derived column in view — not yet available
 
-### Widget 5c: Invite Rate by Territory (ranked bar)
+### Widget 5c: Territory Adoption of the NBA Dropdown List (ranked bar)
 - Source: mv_speaker_nba
-- invitation_rate_60d by territory, sorted descending. **Filter: `nba_group = 'NBA'`** or split by nba_group.
-- Identifies territories that act on NBA alerts vs those that don't
+- Source: `mv_speaker_nba_territory` (grain NPI × cycle × aligned territory). Territories ranked by `hcps_invited_by_aligned_territory_60d`, with `territory_action_rate_60d` as the KPI. **Filter: `nba_group = 'NBA'`.**
+- Credit goes to the event owner's territory (Veeva, via `dim_event_owner`), so a shared HCP credits only the territory that sent the invite.
+- Identifies territories that act on their NBA dropdown list vs those that don't. Do not use the `territory` column of `mv_speaker_nba` (removed: it was an arbitrary pick for shared HCPs).
 
 ### Widget 5d: Monthly Funnel Trend (stacked area)
 - Source: mv_speaker_nba
-- Monthly: alerted, invited, attended stacked. **Filter: `nba_group = 'NBA'`** or split by nba_group.
+- Monthly: on NBA list, invited, attended stacked. **Filter: `nba_group = 'NBA'`** or split by nba_group.
 - Shows whether the pipeline is growing or shrinking
 
 ---
@@ -226,7 +227,7 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 
 ### Widget 6a: NBA Funnel (large, prominent)
 - Source: mv_speaker_nba
-- Monthly funnel: Alerted → Invited (60d) → Attended (60d)
+- Monthly funnel: On NBA List → Invited (60d) → Attended (60d)
 - With invite rate and attend conversion annotations
 
 ### Widget 6b: NBA Lift vs Overall Program Lift (comparison)
@@ -248,12 +249,12 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 ### Widget 6f: NBA vs Not NBA Comparison
 - Source: mv_speaker_nba (invite rate, invite-to-attend) + mv_speaker_nba_rx (4w lift, new-writer rate)
 - Side-by-side by `nba_group`: invitation_rate_60d, invite_to_attend_60d, avg_nbrx_lift_4w, new_writer_rate_4w
-- By alert_month (rows) and nba_group (columns)
-- Answers: "Are NBA-flagged HCPs performing differently than their non-flagged Segment A/B peers?"
+- By NBA cycle month (rows) and nba_group (columns)
+- Answers: "Are HCPs on the NBA dropdown list performing differently than their Segment A/B peers who are not on it?"
 
 ### Widget 6e: Coverage & Data Freshness
 - Source: mv_speaker_nba_rx
-- Heat grid: alert_month × funnel_stage → pct_4w_covered / pct_12w_covered
+- Heat grid: NBA cycle month × funnel_stage → pct_4w_covered / pct_12w_covered
 - Color: green (≥90%) → yellow (50-90%) → red (<50%)
 - Answers: "Which metrics can I trust right now?"
 
@@ -281,7 +282,8 @@ Each page's header includes a methodology footnote. The rationale for metric sel
 | NBRx lift & new writers | mv_speaker_lift, mv_speaker_nba_rx | Weekly (v6 trigger) |
 | TRx volume | mv_speaker_trx, v_national_trx_month | Monthly (Xponent) |
 | Calls & follow-up | mv_speaker_calls | Monthly (Lynkuet) |
-| NBA funnel | mv_speaker_nba | Monthly (alerts + attendance) |
+| NBA funnel | mv_speaker_nba | Monthly (NBA dropdown list + attendance) |
+| Territory adoption | mv_speaker_nba_territory | Monthly (NBA dropdown list + Veeva event owner) |
 | NBA Rx impact | mv_speaker_nba_rx | Weekly (v6 trigger) |
 | Market context | v_national_nbrx_month, v_national_trx_month | Monthly |
 

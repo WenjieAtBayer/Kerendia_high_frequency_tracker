@@ -129,7 +129,8 @@ GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 | Table | Trigger | Cadence | Who |
 |-------|---------|---------|-----|
 | `hcp_xref` | New segment lists or roster changes | Quarterly | Nicholas (Snowflake) |
-| `fact_attendance` | New speaker program events | Monthly (after each NBA alert) | Nicholas (Snowflake) |
+| `fact_attendance` | New speaker program events | Monthly (after each NBA cycle) | Nicholas (Snowflake) |
+| `dim_event_owner` | Veeva event owner (requesting rep) + territory | Every refresh (SP_POC_Refresh cell "Refresh dim_event_owner from Veeva events") | UC-to-UC from cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY |
 | `fact_calls` | New Veeva call data | Monthly | Nicholas (Snowflake) |
 | `fact_rx_hcp_week` | v6 table refresh | **Weekly** (when v6 updates) | **SP_POC_Refresh notebook** |
 | `fact_trx_hcp_month` | Xponent monthly refresh | Monthly | Nicholas (Snowflake) |
@@ -169,7 +170,7 @@ Coordinate with Nicholas Siebenlist to run the original pipeline. These tables r
 
 With Rx data through Sep 25, 2026:
 
-| Alert Month | 4w Coverage | 12w Coverage | Next Unlock |
+| NBA Cycle Month | 4w Coverage | 12w Coverage | Next Unlock |
 |-------------|-------------|--------------|-------------|
 | July 2026 | **100%** | 0% | 12w needs Sep 29 (4 days away — next v6 refresh) |
 | August 2026 | **96–100%** | 0% | 12w needs late Nov |
@@ -182,10 +183,11 @@ With Rx data through Sep 25, 2026:
 
 | Date | Actor | Views Changed | Description |
 |------|-------|---------------|-------------|
-| Oct 16, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx | Initial creation. Universe = ALERT_FLAG = 1 only (NBA HCPs). |
+| Oct 16, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx | Initial creation. Universe = ALERT_FLAG = 1 only (HCPs on the NBA dropdown list). |
 | Oct 20, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx | **Universe expansion and dedup.** Changed via `ALTER VIEW` (permissions preserved). Universe expanded from NBA-only (ALERT_FLAG = 1) to all Segment A/B HCPs per monthly cycle. New dimensions: `is_nba` (MAX(ALERT_FLAG) = 1), `nba_group` ('NBA' / 'Not NBA'). Not NBA HCPs anchored to the same cycle date for all windows. `mv_speaker_nba` deduplicated to 1 row per NPI x cycle (was ~1.8x inflated). New measures: `hcp_cycles`, `npis_universe`, `npis_not_nba`, `nba_coverage_rate` (mv_speaker_nba); `npis_nba`, `npis_not_nba` (mv_speaker_nba_rx). `alerts` and `npis_alerted` now FILTER WHERE is_nba. All funnel/Rx measures are generic over the slice; dashboards must filter `nba_group = 'NBA'` for NBA-only numbers. |
+| Oct 20, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx, mv_speaker_nba_territory (new), dim_event_owner (new) | **Territory fix + inviting rep.** Removed `territory` (was `FIRST(TERR_DESC)`, an arbitrary pick for the ~80% of HCPs shared by 2–4 territories). Added `aligned_territories`, `n_aligned_territories`, `is_shared_hcp` to both views; added `inviting_territory`, `inviting_rep`, `invited_by_aligned_territory_30d/60d` dims and `shared_hcps`, `invitations_by_aligned_territory_60d`, `pct_invites_from_aligned_territory_60d` measures to mv_speaker_nba. New `mv_speaker_nba_territory` (NPI × cycle × territory) for territory adoption. Comments and display names now say "NBA dropdown list" instead of "alert" (column names unchanged). Applied with `CREATE OR REPLACE VIEW`; no object-level grants existed (catalog-inherited only). Prior DDL saved in `sp_poc._mv_ddl_backup`. Funnel and lift numbers unchanged. |
 
-**Upstream dependency note:** Both metric views depend on the alerts table (`kerendia_nba_3.kerendia_sp_nba_integration_alerts`) containing `ALERT_FLAG = 0` rows for Segment A/B HCPs. If the upstream alert feed ever stops publishing non-flagged rows, the Not NBA group will be empty and universe counts will drop to NBA-only levels.
+**Upstream dependency note:** All three NBA metric views depend on the NBA list source table (`kerendia_nba_3.kerendia_sp_nba_integration_alerts`) containing `ALERT_FLAG = 0` rows for Segment A/B HCPs. If the upstream feed ever stops publishing rows for HCPs not on the list, the Not NBA group will be empty and universe counts will drop to NBA-only levels.
 
 ---
 
