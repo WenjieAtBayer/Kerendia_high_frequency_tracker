@@ -2,21 +2,23 @@
 
 > **Catalog:** `ph-com-ai-us-prod-catalog-2553213839599380.sp_poc`  
 > **Views:** `mv_speaker_nba` · `mv_speaker_nba_rx`  
-> **Last updated:** October 2026
+> **Last updated:** October 20, 2026
 
 ---
 
 ## 1. Initiative Overview
 
-The Kerendia P2P (Peer-to-Peer / Speaker Program) **NBA (Next Best Action)** initiative is a monthly alert system that recommends HCPs for speaker program invitations. Alerts are issued on the 7th of each month to HCPs who:
-- Have `ALERT_FLAG = 1`
-- Belong to `CALL_PLAN_SEGMENT` A or B
-- Are in territories included in the Pharma Roster
+The Kerendia P2P (Peer-to-Peer / Speaker Program) **NBA (Next Best Action)** initiative is a monthly alert system that recommends HCPs for speaker program invitations. Alerts are issued on the 7th of each month. The **universe** for both metric views is all Segment A and B HCPs (`CALL_PLAN_SEGMENT IN ('A_High_Potential_Writer', 'B_High_Potential_Non_Writer')`) present in each monthly cycle of the alerts table. Within that universe:
 
-The reporting goal is end-to-end visibility from alert to prescription impact:
+- **NBA** (`is_nba = TRUE`, `nba_group = 'NBA'`): HCPs flagged with `ALERT_FLAG = 1` in that cycle — the system's top recommendations.
+- **Not NBA** (`is_nba = FALSE`, `nba_group = 'Not NBA'`): Segment A/B HCPs who were *not* flagged in that cycle. They serve as a concurrent same-segment comparison group, anchored to the same cycle date.
+
+NBA coverage of the A/B universe is approximately 14% (July) to 20% (August onward).
+
+The reporting goal is end-to-end visibility from alert to prescription impact, with the ability to compare NBA-flagged HCPs against non-flagged peers:
 
 ```
-NBA Alert → Invitation Sent → Program Attendance → NBRx / New Writer
+Segment A/B Universe → NBA vs Not NBA → Invitation Sent → Program Attendance → NBRx / New Writer
 ```
 
 ---
@@ -25,13 +27,13 @@ NBA Alert → Invitation Sent → Program Attendance → NBRx / New Writer
 
 | Table | Schema | Grain | Key Columns |
 |-------|--------|-------|-------------|
-| `kerendia_sp_nba_integration_alerts` | `kerendia_nba_3` | 1 row per HCP × scenario | `NPI_NUMBER` (double), `ALERT_DATE` (string), `ALERT_FLAG`, `CALL_PLAN_SEGMENT` |
+| `kerendia_sp_nba_integration_alerts` | `kerendia_nba_3` | 1 row per HCP × scenario | `NPI_NUMBER` (double), `ALERT_DATE` (string), `ALERT_FLAG` (0 or 1), `CALL_PLAN_SEGMENT` |
 | `fact_attendance` | `sp_poc` | 1 row per NPI × event | `npi` (string), `event_date`, `attended_flag` (boolean) |
 | `fact_rx_hcp_week` | `sp_poc` | 1 row per NPI × week | `npi`, `week_ending_date`, `nbrx` |
 
 **NPI join key:** `CAST(CAST(NPI_NUMBER AS BIGINT) AS STRING)` — alerts store NPI as `DOUBLE`, requiring two-step cast to match the `STRING` NPI in other tables.
 
-**Alert deduplication:** ~7,900–10,500 alert rows per month collapse to ~4,300–6,200 distinct NPIs (1.8× duplication from multiple scenario rows per HCP).
+**Alert deduplication:** The alerts table contains rows for all segments (A, B, C, D, E, and NULL) with both `ALERT_FLAG = 0` (not flagged) and `ALERT_FLAG = 1` (flagged). The metric views filter to Segment A/B only and deduplicate to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `MAX(ALERT_FLAG)` to determine NBA status and `FIRST()` for segment, specialty, territory, region, and area. Per-cycle totals: ~26k–31k A/B HCPs per month, of which ~4,300–6,200 are NBA-flagged.
 
 ---
 
@@ -81,6 +83,22 @@ The post-Rx measurement window should not always start from the alert date. An H
 **Decision:** `post_anchor_date` adapts per HCP:
 - First attended event date (if attended) → first invite date (if invited only) → alert date (if never invited)
 
+### 3.6 Not NBA comparison group
+
+To evaluate whether NBA flagging itself adds value, we need a concurrent comparison group of similar HCPs who were *not* flagged. The alerts table already contains `ALERT_FLAG = 0` rows for Segment A/B HCPs not selected by the model in each cycle, providing a natural non-flagged pool.
+
+**Decision:** Expand the metric view universe from NBA-only (`ALERT_FLAG = 1`) to all Segment A/B HCPs per cycle. Derive:
+- `is_nba = MAX(ALERT_FLAG) = 1` per NPI × cycle (boolean)
+- `nba_group = CASE WHEN is_nba THEN 'NBA' ELSE 'Not NBA' END` (string)
+
+Not NBA HCPs are anchored to the same cycle date (the 7th of each month) for all invite/attend/Rx windows, so windows are directly comparable. Segment is unique per NPI × cycle (verified: no NPI appears in both A and B within the same cycle).
+
+### 3.7 Deduplication of `mv_speaker_nba`
+
+The original `mv_speaker_nba` grouped by `npi, alert_date, alert_month, call_plan_segment, specialty, territory, region, area` but did not collapse the multiple scenario rows per HCP in the alerts table. This produced ~7,900–10,500 rows per month for ~4,300–6,200 distinct NPIs (1.8× inflation). Funnel counts were overstated — e.g., July showed 76 "invited" rows vs 43 actual NPIs invited (60d window).
+
+**Decision:** Deduplicate the inner alerts subquery to 1 row per NPI × cycle using `GROUP BY npi, alert_date, alert_month` with `FIRST()` for dimension columns. This aligns `mv_speaker_nba` with the grain of `mv_speaker_nba_rx` (which already deduplicated). The `fact_attendance` join is now restricted to `event_date BETWEEN alert_date AND alert_date + 60` for consistency.
+
 ---
 
 ## 4. Window Architecture
@@ -98,7 +116,7 @@ Alert Date
  Jul 7                             Sep 5
 ```
 
-Grain: 1 row per NPI × alert_date. Boolean flags for each window.
+Grain: 1 row per Segment A/B NPI × cycle date. Boolean flags for each window. Includes both NBA-flagged and non-flagged HCPs; use `nba_group` to distinguish.
 
 ### 4.2 `mv_speaker_nba_rx` — Early-Read (4-week Rx)
 
@@ -204,36 +222,52 @@ Aggregate measures `pct_4w_covered` and `pct_12w_covered` show the percentage of
 
 ---
 
-## 6. Early Findings (October 2026)
+## 6. Early Findings (October 2026, updated October 20)
 
-### July 2026 — 4-week early read (100% coverage after refresh)
+> **Open item — new-writer figures need reconfirmation (Oct 20, 2026):** The prior version of this section reported 2 new writers (40% NW rate) among July NBA ATTENDED HCPs and 70 among July NBA NOT_INVITED HCPs. Current `mv_speaker_nba_rx` output gives 0 and 6. The Oct 20 view change (Decisions 3.6–3.7) does **not** explain this: it expanded the universe and deduplicated `mv_speaker_nba`, but did not modify the new-writer logic (`is_new_writer_4w` / `12w`), and NBA lift values and cohort sizes still match the prior version. The source of the discrepancy is unresolved. Treat all New Writers and NW Rate values below (July and August, both groups) as **unconfirmed** until reconciled; lift and NPI counts are confirmed.
 
-| Funnel Stage | NPIs | Lift | New Writers | NW Rate |
-|-------------|------|------|-------------|--------|
-| ATTENDED | 5 | **+2.60** | 2 | **40.0%** |
-| INVITED_ONLY | 12 | 0.00 | 1 | 8.3% |
-| NOT_INVITED | 4,338 | 0.00 | 70 | 1.6% |
+### July 2026 — 4-week early read (100% coverage), NBA vs Not NBA
 
-### August 2026 — 4-week early read (96–100% coverage, newly available after refresh)
+| nba_group | Funnel Stage | NPIs | Avg 4w Lift | New Writers (unconfirmed) | NW Rate (unconfirmed) |
+|-----------|-------------|------|-------------|-------------|--------|
+| **NBA** | ATTENDED | 5 | **+2.60** | 0 | 0.0% |
+| **NBA** | INVITED_ONLY | 12 | 0.00 | 1 | 8.3% |
+| **NBA** | NOT_INVITED | 4,338 | +0.005 | 6 | 0.1% |
+| Not NBA | ATTENDED | 19 | +0.32 | 4 | 21.1% |
+| Not NBA | INVITED_ONLY | 62 | +0.24 | 3 | 4.8% |
+| Not NBA | NOT_INVITED | 26,544 | +0.0002 | 24 | 0.1% |
 
-| Funnel Stage | NPIs | Lift | New Writers | NW Rate |
-|-------------|------|------|-------------|--------|
-| ATTENDED | 10 | **+0.40** | 1 | **10.0%** |
-| INVITED_ONLY | 25 | +0.08 | 3 | 12.0% |
-| NOT_INVITED | 6,225 | +0.01 | 57 | 0.9% |
+Overall 4w lift: NBA +0.008 vs Not NBA +0.001.
 
-**Key insight:** The July ATTENDED cohort (5 NPIs) shows a dramatic +2.60 NBRx lift and 40% new-writer conversion. August’s ATTENDED cohort (10 NPIs), now visible after the refresh, confirms the signal with +0.40 lift and 10% new-writer rate — still well above the NOT_INVITED baseline.
+### August 2026 — 4-week early read (96–100% coverage), NBA vs Not NBA
 
-### Alert-to-Invite Funnel (all months, 60-day window)
+| nba_group | Funnel Stage | NPIs | Avg 4w Lift | New Writers (unconfirmed) | NW Rate (unconfirmed) |
+|-----------|-------------|------|-------------|-------------|--------|
+| **NBA** | ATTENDED | 10 | **+0.40** | 0 | 0.0% |
+| **NBA** | INVITED_ONLY | 25 | +0.08 | 1 | 4.0% |
+| **NBA** | NOT_INVITED | 6,225 | +0.013 | 18 | 0.3% |
+| Not NBA | ATTENDED | 29 | +0.21 | 2 | 6.9% |
+| Not NBA | INVITED_ONLY | 60 | +0.22 | 1 | 1.7% |
+| Not NBA | NOT_INVITED | 24,856 | +0.005 | 28 | 0.1% |
 
-| Alert Month | NPIs Alerted | Invited | Attended | Invite Rate |
-|-------------|-------------|---------|----------|-------------|
-| July 2026 | 4,355 | 76 | 23 | 1.7% |
-| August 2026 | 6,260 | 83 | 19 | 1.3% |
-| September 2026 | 6,150 | 30 | 3 | 0.5% |
-| October 2026 | 6,152 | 0 | 0 | 0.0% |
+Overall 4w lift: NBA +0.013 vs Not NBA +0.005.
 
-The invite rate is low (~1–2%) because speaker programs are capacity-constrained. The bottleneck is the alert-to-invite step, not program quality — once invited, ~28–30% attend.
+**Key insight:** NBA ATTENDED cohorts show the largest lift (+2.60 in July, +0.40 in August). Not NBA ATTENDED HCPs also show positive lift (+0.32 and +0.21) but smaller than NBA, suggesting NBA flagging may identify higher-potential HCPs. Both groups dramatically outperform their respective NOT_INVITED baselines.
+
+### Alert-to-Invite Funnel (all months, 60-day window, NBA vs Not NBA)
+
+| Alert Month | Group | NPIs | Invited | Attended | Invite Rate | Invite-to-Attend |
+|-------------|-------|------|---------|----------|-------------|-------------------|
+| July 2026 | **NBA** | 4,355 | 43 | 12 | 0.99% | 28% |
+| July 2026 | Not NBA | 26,625 | 178 | 51 | 0.67% | 29% |
+| August 2026 | **NBA** | 6,260 | 51 | 11 | 0.81% | 22% |
+| August 2026 | Not NBA | 24,945 | 141 | 44 | 0.57% | 31% |
+| September 2026 | **NBA** | 6,150 | 18 | 2 | 0.29% | 11% |
+| September 2026 | Not NBA | 24,215 | 52 | 15 | 0.21% | 29% |
+| October 2026 | **NBA** | 6,152 | 0 | 0 | Too early | Too early |
+| October 2026 | Not NBA | 24,249 | 0 | 0 | Too early | Too early |
+
+NBA HCPs have a slightly higher invite rate than Not NBA peers (<1% vs ~0.2–0.7%), though both are low due to speaker program capacity constraints. Once invited, invite-to-attend conversion is similar (~22–31%) across both groups.
 
 ### Top Territories
 
@@ -254,27 +288,39 @@ New Orleans (S LA Striker, W LA), Phoenix Central, and Mid-Atlantic showed the b
 
 | Type | Name | Description |
 |------|------|-------------|
-| Dimension | `alert_month` | Month the alert was issued |
-| Dimension | `territory` / `region` / `area` | Sales geography |
+| Dimension | `npi`, `alert_date`, `alert_month` | HCP, cycle date, cycle month |
+| Dimension | `is_nba` / `nba_group` | NBA flag (boolean) / group label ('NBA' or 'Not NBA') |
 | Dimension | `call_plan_segment` | A or B segment |
+| Dimension | `specialty` | HCP specialty |
+| Dimension | `territory` / `region` / `area` | Sales geography |
 | Dimension | `invited_within_30d` / `60d` | Invitation flag |
 | Dimension | `attended_within_30d` / `60d` | Attendance flag |
-| Measure | `invitations_sent_30d` / `60d` | Count of alerts → invitations |
-| Measure | `invitation_rate_30d` / `60d` | Alert-to-invite % |
-| Measure | `programs_attended_30d` / `60d` | Count of alerts → attendance |
+| Measure | `hcp_cycles` | Total A/B HCP x cycle rows |
+| Measure | `npis_universe` | Distinct A/B NPIs (NBA + Not NBA) |
+| Measure | `alerts` / `npis_alerted` | NBA-flagged rows / distinct NPIs (FILTER WHERE is_nba) |
+| Measure | `npis_not_nba` | Distinct NPIs not flagged by NBA |
+| Measure | `nba_coverage_rate` | Share of A/B universe flagged by NBA |
+| Measure | `invitations_sent_30d` / `60d` | Invited HCP x cycle rows (generic; split by nba_group) |
+| Measure | `invitation_rate_30d` / `60d` | Invite % (generic; split by nba_group) |
+| Measure | `programs_attended_30d` / `60d` | Attended HCP x cycle rows (generic; split by nba_group) |
+| Measure | `attendance_rate_30d` / `60d` | Attend % (generic; split by nba_group) |
 | Measure | `invite_to_attend_30d` / `60d` | Invite-to-attend conversion % |
 
 ### `mv_speaker_nba_rx`
 
 | Type | Name | Description |
 |------|------|-------------|
+| Dimension | `is_nba` / `nba_group` | NBA flag / group label (same as mv_speaker_nba) |
 | Dimension | `funnel_stage` | Early-read cohort (30d/30d) |
 | Dimension | `funnel_stage_12w` | Mature cohort (30d/60d) |
 | Dimension | `is_new_writer_4w` / `12w` | New writer flag |
 | Dimension | `post_4w_complete` / `post_12w_complete` | Rx coverage flag |
-| Measure | `avg_nbrx_lift_4w` / `12w` | Average NBRx lift |
-| Measure | `new_writer_rate_4w` / `12w` | New writer conversion % |
+| Measure | `npis` / `npis_nba` / `npis_not_nba` | Distinct NPIs: universe / NBA / Not NBA |
+| Measure | `avg_nbrx_lift_4w` / `12w` | Average NBRx lift (generic; split by nba_group) |
+| Measure | `new_writer_rate_4w` / `12w` | New writer conversion % (generic; split by nba_group) |
 | Measure | `pct_4w_covered` / `pct_12w_covered` | Data coverage % |
+
+**Note:** Funnel counts, rates, and Rx measures in both views are generic over the current slice. Group or filter by `nba_group` to compare NBA vs Not NBA. Dashboard widgets that previously showed NBA-only numbers must add `WHERE nba_group = 'NBA'`.
 
 ---
 
@@ -291,9 +337,9 @@ All views use **MEASURE() syntax** for aggregation queries.
 
 ## 9. Data Lineage & Refresh Maintenance
 
-> **Full details:** See [SP_POC_Refresh_Maintenance.md](/editor/files/2185703631386835) for the complete refresh guide including ETL logic, dependency graph, refresh procedures, and refresh log.
+> **Full details:** See [SP_POC_Refresh_Maintenance.md](/editor/files/2185703631386938) for the complete refresh guide including ETL logic, dependency graph, refresh procedures, and refresh log.
 >
-> **Refresh notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386802)
+> **Refresh notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386936)
 
 ### 9.1 Table Inventory
 

@@ -1,5 +1,5 @@
 # Kerendia NBA × Speaker Program: Impact Insights
-**Date:** October 19, 2026 | **Prepared by:** Analytics & AI Team | **Data through:** September 25, 2026
+**Date:** October 19, 2026 (updated October 20, 2026) | **Prepared by:** Analytics & AI Team | **Data through:** September 25, 2026
 
 ---
 
@@ -7,7 +7,7 @@
 
 The Next Best Action (NBA) engine has been flagging high-potential HCPs for speaker program engagement since July 2026. This report measures what happens when those flagged HCPs are actually invited to — and attend — a speaker program, compared to those who are not invited.
 
-**Bottom line:** HCPs who attend a speaker program after an NBA alert show significantly higher prescribing activity than those who are not invited. The opportunity is clear — but the current bottleneck is the alert-to-invite conversion rate (~1%), not program effectiveness.
+**Bottom line:** HCPs who attend a speaker program after an NBA alert show significantly higher prescribing activity than those who are not invited. The opportunity is clear — but the current bottleneck is the alert-to-invite conversion rate (<1% for NBA HCPs), not program effectiveness.
 
 ---
 
@@ -33,18 +33,25 @@ We measure Rx impact over two time horizons because prescribing behavior doesn't
 
 ## 2. The Funnel: From Alert to Attendance
 
-| Month | HCPs Alerted | Invited (60d) | Attended (60d) | Invite Rate | Invite-to-Attend |
-|-------|-------------|---------------|----------------|-------------|-------------------|
-| July 2026 | 4,355 | 76 | 23 | **1.7%** | **30%** |
-| August 2026 | 6,260 | 83 | 19 | **1.3%** | **23%** |
-| September 2026 | 6,150 | 30 | 3 | 0.5% | 10% |
-| October 2026 | 6,152 | — | — | Too early | Too early |
+> **Correction (Oct 20, 2026):** The funnel counts below have been corrected after deduplicating `mv_speaker_nba` to 1 row per NPI x cycle. The prior version had inflated numbers (e.g., July showed 76 invited / 23 attended) due to duplicate alert rows per HCP. The corrected NBA numbers and a new Not NBA comparison group are shown below.
 
-**Takeaway:** Once an HCP is invited, roughly **1 in 4 attend** — a healthy conversion rate. The constraint is upstream: only ~1–2% of NBA-flagged HCPs receive a speaker program invitation within 60 days. This reflects the limited capacity of speaker programs, but represents the key leverage point for scaling impact.
+| Month | Group | HCPs | Invited (60d) | Attended (60d) | Invite Rate | Invite-to-Attend |
+|-------|-------|------|---------------|----------------|-------------|-------------------|
+| July 2026 | **NBA** | 4,355 | 43 | 12 | **0.99%** | **28%** |
+| July 2026 | Not NBA | 26,625 | 178 | 51 | 0.67% | 29% |
+| August 2026 | **NBA** | 6,260 | 51 | 11 | **0.81%** | **22%** |
+| August 2026 | Not NBA | 24,945 | 141 | 44 | 0.57% | 31% |
+| September 2026 | **NBA** | 6,150 | 18 | 2 | 0.29% | 11% |
+| September 2026 | Not NBA | 24,215 | 52 | 15 | 0.21% | 29% |
+| October 2026 | Both | 30,401 | 0 | 0 | Too early | Too early |
+
+**Takeaway:** Once an HCP is invited, roughly **1 in 4 attend** — a healthy conversion rate. The constraint is upstream: less than 1% of NBA-flagged HCPs receive a speaker program invitation within 60 days. Not NBA Segment A/B HCPs show a slightly lower invite rate (~0.2–0.7%) but a comparable invite-to-attend conversion (~29–31%). This confirms the bottleneck is program capacity, not NBA targeting specifically.
 
 ---
 
 ## 3. Prescribing Impact by Segment
+
+> **Note:** The tables below cover **NBA HCPs only** (those with `nba_group = 'NBA'`). A Not NBA comparison is now available via the `nba_group` dimension in `mv_speaker_nba_rx`.
 
 We report different metrics for each segment because they measure different things:
 
@@ -146,7 +153,7 @@ The automated weekly refresh pipeline is now in place — as new Rx data arrives
 - **Segment B requires patience** — the 4-week window is too short to judge non-writer conversion; the 12-week mature read will be the real test
 
 ### The Opportunity
-- **Scaling the invite rate is the #1 lever.** Currently ~1% of NBA-flagged HCPs are invited. Even increasing to 3–5% could double or triple the downstream NBRx impact.
+- **Scaling the invite rate is the #1 lever.** Currently <1% of NBA-flagged HCPs are invited. Even increasing to 3–5% could double or triple the downstream NBRx impact.
 - **Prioritize Segment A for speaker program slots** — immediate lift is largest here, and measurable within 4 weeks
 - **Don't give up on Segment B yet** — the 12-week read may reveal conversions the 4-week window misses
 

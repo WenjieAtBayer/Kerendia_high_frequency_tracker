@@ -1,9 +1,10 @@
 # SP_POC Refresh Maintenance Guide
 
 **Schema:** `ph-com-ai-us-prod-catalog-2553213839599380.sp_poc`
-**Refresh Notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386802)
-**Design Doc:** [NBA_Speaker_Program_Metric_Views_Design.md](/editor/files/1139238961821424)
+**Refresh Notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386936)
+**Design Doc:** [NBA_Speaker_Program_Metric_Views_Design.md](/editor/files/2185703631386937)
 **Last refreshed:** Oct 19, 2026 (fact_rx_hcp_week + pre_post_lift)
+**Last updated:** October 20, 2026
 
 ---
 
@@ -177,7 +178,18 @@ With Rx data through Sep 25, 2026:
 
 ---
 
-## 8. Long-term Recommendations
+## 8. Metric View Change Log
+
+| Date | Actor | Views Changed | Description |
+|------|-------|---------------|-------------|
+| Oct 16, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx | Initial creation. Universe = ALERT_FLAG = 1 only (NBA HCPs). |
+| Oct 20, 2026 | Wenjie | mv_speaker_nba, mv_speaker_nba_rx | **Universe expansion and dedup.** Changed via `ALTER VIEW` (permissions preserved). Universe expanded from NBA-only (ALERT_FLAG = 1) to all Segment A/B HCPs per monthly cycle. New dimensions: `is_nba` (MAX(ALERT_FLAG) = 1), `nba_group` ('NBA' / 'Not NBA'). Not NBA HCPs anchored to the same cycle date for all windows. `mv_speaker_nba` deduplicated to 1 row per NPI x cycle (was ~1.8x inflated). New measures: `hcp_cycles`, `npis_universe`, `npis_not_nba`, `nba_coverage_rate` (mv_speaker_nba); `npis_nba`, `npis_not_nba` (mv_speaker_nba_rx). `alerts` and `npis_alerted` now FILTER WHERE is_nba. All funnel/Rx measures are generic over the slice; dashboards must filter `nba_group = 'NBA'` for NBA-only numbers. |
+
+**Upstream dependency note:** Both metric views depend on the alerts table (`kerendia_nba_3.kerendia_sp_nba_integration_alerts`) containing `ALERT_FLAG = 0` rows for Segment A/B HCPs. If the upstream alert feed ever stops publishing non-flagged rows, the Not NBA group will be empty and universe counts will drop to NBA-only levels.
+
+---
+
+## 9. Long-term Recommendations
 
 1. **Automate fact_rx_hcp_week refresh**: Schedule SP_POC_Refresh notebook as a weekly Lakeflow Job triggered by v6 table updates
 2. **Parameterize v6 version**: Add a notebook widget for the v6 table path in case v7/v8 is published

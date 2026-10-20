@@ -44,6 +44,30 @@
 
 ---
 
+## Metric Methodology & Rationale
+
+Each page's header includes a methodology footnote. The rationale for metric selection:
+
+**NBRx Lift** (P1, P2, P4): The primary outcome measure. Calculated as avg post-window NBRx/HCP minus avg pre-window NBRx/HCP using rolling monthly cohorts. Chosen over TRx because NBRx captures new prescribing decisions (behavioral change), while TRx includes refills (volume). The lift trend on P1 uses mv_speaker_lift which covers all programs, not just NBA.
+
+**New-Writer Conversion** (P2, P6): For Segment B (non-writers), lift is meaningless (pre=0, post~0). Instead we measure whether they start prescribing at all. New writer = zero Kerendia NBRx in 12 months pre-event who wrote at least 1 script in the post-window.
+
+**4-Week vs 12-Week Windows** (P6): 4w captures immediate signal (available sooner); 12w captures durable behavioral change (critical for Seg B who need more time to convert). Both shown on P6; P1-P4 use the overall program lift from mv_speaker_lift.
+
+**Dose-Response / Exposure Bands** (P4): Tests whether repeat attendance amplifies lift. Based on exposure_band from mv_speaker_lift.
+
+**Call Coverage** (P4): Measures rep follow-up within 30 days. Tests whether field reinforcement amplifies the program effect.
+
+**NBA Funnel Counts** (P1, P5, P6): Absolute counts, not percentages, because invitation/attendance rates relative to the full A/B universe round to near zero. The invite-to-attend conversion (~23-30%) remains as a percentage because it is actionable. **All NBA funnel widgets must filter `nba_group = 'NBA'`** to show NBA-specific numbers; without this filter, counts include Not NBA HCPs.
+
+**Caveats:**
+- Small sample sizes for attended cohorts (5-17 HCPs per month)
+- Segment B 4-week window likely understates conversion (non-writers need more time)
+- Segment labels may be stale (7.8% of Seg B have recent Rx history)
+- Oct data too recent for 60-day funnel completion
+
+---
+
 ## Page 1: Executive Summary
 
 **Purpose:** Give leadership the story in 60 seconds. Every metric links to a deeper page.
@@ -57,7 +81,7 @@
 | Target Reach Rate | mv_speaker_attendance + mv_segment_universe | attendees / target_universe_hcps |
 | Avg NBRx Lift (Attended vs Control) | mv_speaker_lift | avg_post_nbrx - avg_pre_nbrx, attended vs not |
 | New Writers (YTD) | mv_speaker_lift | SUM(new_writers) for attended cohort |
-| NBA Alert-to-Attend Rate | mv_speaker_nba | attended / alerted (60d) |
+| NBA Alert-to-Attend Rate | mv_speaker_nba | attended / alerted (60d). **Filter: `nba_group = 'NBA'`** |
 
 ### Trend Chart
 - Monthly NBRx lift trend (attended vs control) — mv_speaker_lift by anchor_month
@@ -175,7 +199,7 @@
 
 ### Widget 5a: Full Journey Funnel (funnel chart)
 - Combines mv_segment_universe → mv_speaker_nba → mv_speaker_nba_rx
-- Stages: Target Universe → NBA Alerted → Invited → Attended → Wrote Rx → Sustained Writer
+- Stages: Segment A/B Universe (npis_universe from mv_speaker_nba) → NBA Alerted (npis_alerted) → Invited → Attended → Wrote Rx → Sustained Writer. **Filter: `nba_group = 'NBA'` for NBA-specific stages.**
 - Drop-off % at each stage
 
 ### Widget 5b: Time-to-First-Rx (histogram)
@@ -186,12 +210,12 @@
 
 ### Widget 5c: Invite Rate by Territory (ranked bar)
 - Source: mv_speaker_nba
-- invitation_rate_60d by territory, sorted descending
+- invitation_rate_60d by territory, sorted descending. **Filter: `nba_group = 'NBA'`** or split by nba_group.
 - Identifies territories that act on NBA alerts vs those that don't
 
 ### Widget 5d: Monthly Funnel Trend (stacked area)
 - Source: mv_speaker_nba
-- Monthly: alerted, invited, attended stacked
+- Monthly: alerted, invited, attended stacked. **Filter: `nba_group = 'NBA'`** or split by nba_group.
 - Shows whether the pipeline is growing or shrinking
 
 ---
@@ -221,6 +245,12 @@
 - 4w vs 12w comparison
 - Caveat footnote on segment-label lag (7.8%)
 
+### Widget 6f: NBA vs Not NBA Comparison
+- Source: mv_speaker_nba (invite rate, invite-to-attend) + mv_speaker_nba_rx (4w lift, new-writer rate)
+- Side-by-side by `nba_group`: invitation_rate_60d, invite_to_attend_60d, avg_nbrx_lift_4w, new_writer_rate_4w
+- By alert_month (rows) and nba_group (columns)
+- Answers: "Are NBA-flagged HCPs performing differently than their non-flagged Segment A/B peers?"
+
 ### Widget 6e: Coverage & Data Freshness
 - Source: mv_speaker_nba_rx
 - Heat grid: alert_month × funnel_stage → pct_4w_covered / pct_12w_covered
@@ -237,6 +267,7 @@
 | Segment | mv_speaker_lift / mv_speaker_nba_rx | A, B, C, D, E / A_High_Potential_Writer, B_High_Potential_Non_Writer |
 | Specialty | Multiple | CARD, PCP, NEPH, ENDO, OTHER |
 | Geography | Multiple | Area → Region → Territory (drill-down) |
+| NBA Group | mv_speaker_nba / mv_speaker_nba_rx | 'NBA', 'Not NBA' (filter or split) |
 | Format | mv_speaker_attendance | In-Person, Virtual, Hybrid |
 | Indication | mv_speaker_attendance | CKD, HF |
 
@@ -262,7 +293,7 @@
 |-----|--------|-----------|
 | Time-to-first-Rx post-attendance | Can't show distribution of days to first Rx | Add derived column to mv_speaker_nba_rx: MIN(rx.week_ending_date) in post-window |
 | Sustained writer flag | Can't distinguish one-time vs repeat post-Rx | Add flag: post-window Rx in ≥2 distinct weeks |
-| NBA vs organic comparison | Can't compare NBA-driven vs non-NBA attendees | Join mv_speaker_lift with mv_speaker_nba on NPI to tag "NBA-sourced" attendees |
+| NBA vs organic comparison | ~~Can't compare NBA-driven vs non-NBA attendees~~ | **Resolved (Oct 20, 2026):** `nba_group` dimension in mv_speaker_nba and mv_speaker_nba_rx. Widget 6f shows side-by-side comparison. |
 | Channel/format interaction | Limited format × indication × segment breakdown | May need a cross-tab metric view |
 | Branded vs non-branded indication | mv_branded_non_branded exists but not in space | Add to space if CKD vs HF breakdown needed beyond attendance |
 
