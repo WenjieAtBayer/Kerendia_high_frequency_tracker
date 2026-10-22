@@ -7,7 +7,9 @@
         "SELECT\n",
         "  *\n",
         "FROM\n",
-        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_nbrx_month"
+        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_nbrx_month\n",
+        "WHERE\n",
+        "  rx_month >= '2026-01-01'"
       ]
     },
     {
@@ -17,21 +19,24 @@
         "SELECT\n",
         "  *\n",
         "FROM\n",
-        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_trx_month"
+        "  `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.v_national_trx_month\n",
+        "WHERE\n",
+        "  month_id >= '202601'"
       ]
     },
     {
       "name": "lmv_attendance",
       "displayName": "Speaker Attendance (LMV)",
       "config": {
-        "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_attendance",
-        "dimensions": [
+        "measures": [
           {
             "expr": "source.*"
           }
         ],
-        "measures": [
+        "filter": "event_date >= '2026-01-01'",
+        "version": "1.1",
+        "dimensions": [
           {
             "expr": "source.*"
           }
@@ -42,17 +47,7 @@
       "name": "lmv_lift",
       "displayName": "Speaker Lift (LMV)",
       "config": {
-        "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_lift",
-        "dimensions": [
-          {
-            "expr": "source.*"
-          },
-          {
-            "name": "cohort",
-            "expr": "CASE WHEN source.is_attended THEN 'Attended' ELSE 'Not Attended' END"
-          }
-        ],
         "measures": [
           {
             "expr": "source.* EXCEPT (avg_pre_nbrx, avg_post_nbrx, avg_lift, avg_trx_pre, avg_trx_post, avg_trx_lift, pct_attendees_changed, new_writer_rate, call_coverage_30d)"
@@ -156,6 +151,17 @@
                 "places": 0.0
               }
             }
+          }
+        ],
+        "filter": "anchor_month >= '2026-01-01'",
+        "version": "1.1",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          },
+          {
+            "name": "cohort",
+            "expr": "CASE WHEN source.is_attended THEN 'Attended' ELSE 'Not Attended' END"
           }
         ]
       }
@@ -376,14 +382,15 @@
       "name": "lmv_rx",
       "displayName": "Speaker NBRx (LMV)",
       "config": {
-        "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_rx",
-        "dimensions": [
+        "measures": [
           {
             "expr": "source.*"
           }
         ],
-        "measures": [
+        "filter": "rx_month >= '2026-01-01'",
+        "version": "1.1",
+        "dimensions": [
           {
             "expr": "source.*"
           }
@@ -394,8 +401,14 @@
       "name": "lmv_trx",
       "displayName": "Speaker TRx (LMV)",
       "config": {
-        "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_trx",
+        "measures": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "filter": "month_id >= '202601'",
+        "version": "1.1",
         "dimensions": [
           {
             "expr": "source.*"
@@ -404,11 +417,6 @@
             "name": "cohort",
             "expr": "CASE WHEN source.is_attended THEN 'Attended' ELSE 'Not Attended' END"
           }
-        ],
-        "measures": [
-          {
-            "expr": "source.*"
-          }
         ]
       }
     },
@@ -416,14 +424,15 @@
       "name": "lmv_calls",
       "displayName": "Speaker Calls (LMV)",
       "config": {
-        "version": "1.1",
         "source": "`ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.mv_speaker_calls",
-        "dimensions": [
+        "measures": [
           {
             "expr": "source.*"
           }
         ],
-        "measures": [
+        "filter": "call_month >= '2026-01-01'",
+        "version": "1.1",
+        "dimensions": [
           {
             "expr": "source.*"
           }
@@ -540,7 +549,7 @@
               "lines": [
                 "## Kerendia Speaker Program\n",
                 "### High-Frequency Performance Tracker\n",
-                "*NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP (rolling monthly cohorts, all programs). New Writer = zero Kerendia NBRx in 12 months pre-event who wrote post-window. Data refreshes weekly with v6 source. All pay types incl. cash-pay.*"
+                "*NBRx Lift = avg post-window NBRx/HCP − avg pre-window NBRx/HCP (rolling monthly cohorts, all programs Jan 2026 onward). New Writer = zero Kerendia NBRx in 12 months pre-event who wrote post-window. Data refreshes weekly with v6 source. All pay types incl. cash-pay.*"
               ]
             }
           },
@@ -1212,7 +1221,7 @@
                 "## Program Effectiveness\n",
                 "*Did behavior change? How much?*\n",
                 "\n",
-                "**Methodology:** Lift is measured as pre/post NBRx change per HCP. \"Attended\" = HCPs who attended ≥1 speaker program; \"Not Attended\" = matched control. The 4w vs 12w pivot on P6 compares early signal (28-day) vs durable change (84-day). A positive lift means more scripts were written after the program than before."
+                "**Methodology:** Lift is measured as pre/post NBRx change per HCP for programs Jan 2026 onward. \"Attended\" = HCPs who attended ≥1 speaker program; \"Not Attended\" = matched control. The 4w vs 12w pivot on P6 compares early signal (28-day) vs durable change (84-day). A positive lift means more scripts were written after the program than before."
               ]
             }
           },
@@ -1619,7 +1628,7 @@
                 "## Audience Segmentation\n",
                 "*What factors drove the change?*\n",
                 "\n",
-                "**Segment A** (existing writers): measured by NBRx lift — did they write more after attending? **Segment B** (non-writers): measured by new-writer conversion — did they start prescribing? Different segments require different success metrics."
+                "**Segment A** (existing writers): measured by NBRx lift — did they write more after attending? **Segment B** (non-writers): measured by new-writer conversion — did they start prescribing? Different segments require different success metrics. All programs Jan 2026 onward."
               ]
             }
           },
@@ -1948,7 +1957,7 @@
                 "## Frequency & Exposure\n",
                 "*How much exposure drives the most change?*\n",
                 "\n",
-                "**Dose-response:** Lift by number of programs attended (1, 2, 3+). **Call coverage:** % of attendees with a rep follow-up call within 30 days post-event. Higher exposure and timely follow-up are expected to amplify lift."
+                "**Dose-response:** Lift by number of programs attended (1, 2, 3+). **Call coverage:** % of attendees with a rep follow-up call within 30 days post-event. Higher exposure and timely follow-up are expected to amplify lift. All programs Jan 2026 onward."
               ]
             }
           },
