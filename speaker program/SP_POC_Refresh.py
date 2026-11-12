@@ -236,7 +236,13 @@ if _src_count > 0:
       MAX(TRIM(SPLIT(SALE_ORG_NM, ' - ')[0])) AS owner_territory_id,
       MAX(SALE_ORG_NM) AS owner_territory,
       MAX(SALE_ORG_LVL_1_NM) AS owner_area,
-      MAX(FLD_FORCE_NM) AS owner_field_force
+      MAX(FLD_FORCE_NM) AS owner_field_force,
+      -- Backward-compat NULL columns (old DOMAIN_DP_FACT_EVENTS_ACTIVITY schema).
+      -- mv_speaker_nba references o.owner_rep; keep these so CREATE OR REPLACE does not break it.
+      CAST(NULL AS STRING) AS owner_rep,
+      CAST(NULL AS STRING) AS owner_territory_type,
+      CAST(NULL AS STRING) AS owner_employee_id,
+      CAST(NULL AS INT) AS team_member_count
     FROM cph_db_prod.ANALYTICS_V2.ANLT_BASE_FACT_EVNT_PRSNL_PROM
     WHERE UPPER(PROD_BRAND_NM) LIKE '%KERENDIA%'
       AND EVNT_START_DATE >= '2025-01-01'
