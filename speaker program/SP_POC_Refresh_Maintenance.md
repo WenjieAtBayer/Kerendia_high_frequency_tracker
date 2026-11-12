@@ -3,24 +3,30 @@
 **Schema:** `ph-com-ai-us-prod-catalog-2553213839599380.sp_poc`
 **Refresh Notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386936)
 **Design Doc:** [NBA_Speaker_Program_Metric_Views_Design.md](/editor/files/2185703631386937)
-**Last refreshed:** Nov 8, 2026 (fact_rx_hcp_week via weekly job — Rx data through Oct 16)
+**Last refreshed:** Nov 12, 2026 (full pipeline migration — all tables refreshed)
 **Last updated:** November 12, 2026
 
 ---
 
 ## 1. Table Inventory
 
-All 6 managed tables were originally created on **Sep 25, 2026** by Nicholas Siebenlist from a single notebook (`804528127606154`, now inaccessible). Each was a one-time `CREATE OR REPLACE TABLE AS SELECT`.
+All managed tables were originally created on **Sep 25, 2026** by Nicholas Siebenlist from a single notebook (`804528127606154`, now inaccessible). As of **Nov 12, 2026**, the full pipeline is owned by Wenjie Chen and runs entirely from the SP_POC_Refresh notebook.
 
 | Table | Type | Rows | NPIs | Date Column | Source System |
 |-------|------|------|------|-------------|---------------|
-| `hcp_xref` | Dimension | 6,742 | 6,742 | N/A | Foundation/MDM + segment lists (Snowflake) |
-| `fact_attendance` | Fact | 7,598 | 6,742 | `event_date` | CPH_DB_PROD.ANALYTICS_V2 (Snowflake) |
-| `fact_calls` | Fact | 114,045 | 5,484 | `call_date` | Lynkuet/Veeva (Snowflake) |
-| `fact_rx_hcp_week` | Fact | 175,246 | 3,100 | `week_ending_date` | `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6` (UC) |
-| `fact_trx_hcp_month` | Fact | 55,029 | 3,002 | `month_id` | Xponent FTP+non-FTP (Snowflake) |
-| `pre_post_lift` | Derived | 6,742 | 6,742 | `anchor_dt` | fact_attendance + fact_rx_hcp_week + fact_calls |
-| `dim_event_owner` | Dimension | 0 (wiped) | 0 | `event_id` | cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY (Snowflake federation) |
+| `hcp_xref` | Dimension | 14,972 | 14,972 | N/A | fact_attendance NPIs + dim_call_plan_target + V7 rx_matchable (UC) |
+| `fact_attendance` | Fact | 31,047 | 14,972 | `event_date` | cph_db_prod.ANALYTICS_V2.ANLT_BASE_FACT_EVNT_PRSNL_PROM (Snowflake federation) |
+| `dim_event_owner` | Dimension | 3,259 | 3,259 | `event_id` | ANLT_BASE_FACT_EVNT_PRSNL_PROM SALE_ORG_NM (Snowflake federation) |
+| `fact_rx_hcp_week` | Fact | 338,496 | 5,327 | `week_ending_date` | `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v7` (UC) |
+| `pre_post_lift` | Derived | 14,972 | 14,972 | `anchor_dt` | fact_attendance + fact_rx_hcp_week + kerendia_metric_views.fact_calls |
+
+**Replaced by kerendia_metric_views (no longer in sp_poc):**
+| Old Table | Replacement | Notes |
+|-----------|-------------|-------|
+| `fact_calls` | `kerendia_metric_views.fact_calls` | 2.6M rows, fresh to Nov 6. Column: `call_name` (was `call_nm`). |
+| `fact_trx_hcp_month` | `kerendia_metric_views.fact_xponent_trx` | `month_id` is INT (was STRING). CAST in v_fact_trx_hcp_month view. |
+
+**Pending:** `v_fact_calls` and `v_fact_trx_hcp_month` intermediate views still point to old sp_poc tables. Repointing requires MANAGE permission on the views (see Known Issues).
 
 ---
 
@@ -58,7 +64,7 @@ EXTERNAL SOURCES                    UNITY CATALOG
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**Key:** Only `fact_rx_hcp_week` and `pre_post_lift` can be refreshed from within Databricks. The other 4 tables require Snowflake access via Nicholas's pipeline.
+**Key:** As of Nov 12, 2026, ALL tables are refreshable from the SP_POC_Refresh notebook. The pipeline no longer depends on Nicholas's Snowflake pipeline.
 
 ---
 
@@ -66,7 +72,7 @@ EXTERNAL SOURCES                    UNITY CATALOG
 
 ### 3.1 fact_rx_hcp_week
 
-**Source:** `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6`
+**Source:** `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v7` (switched from V6 on Nov 12, 2026)
 
 ```sql
 CREATE OR REPLACE TABLE sp_poc.fact_rx_hcp_week AS
@@ -111,10 +117,10 @@ GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 
 ### 3.5 hcp_xref
 
-**Source:** Foundation/MDM (Snowflake)
-- Identity bridge: NPI ↔ BH_ID
-- Includes `kerendia_segment`, `specialty`, `territory`, `region`, `area`
-- `rx_matchable` flag: TRUE if NPI exists in v6 Rx data
+**Source:** fact_attendance NPIs (base universe) + kerendia_metric_views.fact_calls (NPI↔BH_ID bridge) + kerendia_metric_views.dim_call_plan_target (segment/territory by quarter, Q3/Q4) + V7 rx_matchable
+- Built from fact_attendance NPIs to define the speaker program universe (attendees + non-attendees)
+- Enriched with segment, territory, region, area from dim_call_plan_target (latest available quarter)
+- `rx_matchable` flag: TRUE if NPI has Kerendia Rx data in V7
 
 ### 3.6 pre_post_lift
 
@@ -129,12 +135,10 @@ GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 
 | Table | Trigger | Cadence | Who |
 |-------|---------|---------|-----|
-| `hcp_xref` | New segment lists or roster changes | Quarterly | Nicholas (Snowflake) |
-| `fact_attendance` | New speaker program events | Monthly (after each NBA cycle) | Nicholas (Snowflake) |
-| `dim_event_owner` | Veeva event owner (requesting rep) + territory | Every refresh (SP_POC_Refresh cell "Refresh dim_event_owner from Veeva events") | UC-to-UC from cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY |
-| `fact_calls` | New Veeva call data | Monthly | Nicholas (Snowflake) |
-| `fact_rx_hcp_week` | v6 table refresh | **Weekly** (when v6 updates) | **SP_POC_Refresh notebook** |
-| `fact_trx_hcp_month` | Xponent monthly refresh | Monthly | Nicholas (Snowflake) |
+| `fact_attendance` | New speaker program events | Weekly (after each NBA cycle) | **SP_POC_Refresh notebook** (Snowflake federation) |
+| `hcp_xref` | After fact_attendance refresh | Weekly | **SP_POC_Refresh notebook** (UC + federation) |
+| `dim_event_owner` | New events | Weekly | **SP_POC_Refresh notebook** (Snowflake federation) |
+| `fact_rx_hcp_week` | V7 table refresh | **Weekly** (when V7 updates) | **SP_POC_Refresh notebook** |
 | `pre_post_lift` | After any fact table refresh | After Rx or attendance refresh | **SP_POC_Refresh notebook** |
 
 ---
@@ -143,18 +147,20 @@ GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 
 ### 5.1 UC-refreshable tables (use SP_POC_Refresh notebook)
 
-1. **Check v6 freshness**: `SELECT MAX(WEEK_ENDING_DATE) FROM kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6`
+1. **Check V7 freshness**: `SELECT MAX(PERIOD_ID) FROM kerendia_laad_based_lrx.kerendia_laad_based_lrx_v7`
 2. **Run Cell 1** (Configuration)
-3. **Run Cell 2** (Pre-refresh audit) — capture current row counts and max dates
-4. **Run Cell 3** (Refresh fact_rx_hcp_week) — CTAS from v6
-5. **Run Cell 5** (Post-refresh validation) — verify row count increased, max_date matches v6
-6. **Run Cell 4** (Recompute pre_post_lift) — only if Cell 3 succeeded
-7. **Run Cell 5 again** — verify pre_post_lift updated
-8. **Run Cell 6** (NBA metric view coverage check) — verify coverage percentages improved
+3. **Run Cell 2** (fact_attendance refresh) — from cph_db_prod federation, with row-count guard
+4. **Run Cell 3** (hcp_xref rebuild) — from fact_attendance + dim_call_plan_target + V7
+5. **Run Cell 4** (Pre-refresh audit) — capture current row counts and max dates
+6. **Run Cell 5** (Refresh fact_rx_hcp_week) — CTAS from V7
+7. **Run Cell 6** (dim_event_owner refresh) — from ANLT_BASE_FACT_EVNT_PRSNL_PROM SALE_ORG_NM
+8. **Run Cell 7** (Recompute pre_post_lift) — only if cells 2-5 succeeded
+9. **Run Cell 8** (Post-refresh validation) — verify all tables updated
+10. **Run Cell 9** (NBA metric view coverage check)
 
-### 5.2 Snowflake-sourced tables
+### 5.2 Snowflake-sourced tables (now owned)
 
-Coordinate with Nicholas Siebenlist to run the original pipeline. These tables require Snowflake credentials and cannot be refreshed from the SP_POC_Refresh notebook.
+As of Nov 12, 2026, all tables are refreshed from the SP_POC_Refresh notebook. fact_attendance and dim_event_owner use Snowflake federation (cph_db_prod) directly. hcp_xref is built from UC sources (fact_calls bridge + dim_call_plan_target). No coordination with Nicholas's pipeline is needed.
 
 ---
 
@@ -166,26 +172,29 @@ Coordinate with Nicholas Siebenlist to run the original pipeline. These tables r
 | Oct 19, 2026 | Wenjie (SP_POC_Refresh) | fact_rx_hcp_week, pre_post_lift | +4 weeks (Sep 4–25). Rows: 164,627→170,463. NPIs: 2,994→3,049. Fixed UNIX_DATE type mismatch in pre_post_lift. |
 | Nov 8, 2026 | SP_POC weekly job | fact_rx_hcp_week, dim_event_owner (wiped) | Rx data through Oct 16. dim_event_owner wiped to 0 rows — Snowflake federation connection (cph_db_prod / snowflake_cdp) returned 0 rows. See Known Issues below. |
 | Nov 12, 2026 | Wenjie | SP_POC_Refresh notebook | Added row-count guard to dim_event_owner cell: checks source row count before CREATE OR REPLACE; skips refresh and warns if source returns 0 rows. |
+| Nov 12, 2026 | Wenjie (Genie Code) | **Full pipeline migration** | All 5 tables refreshed. V6→V7 swap (338K rows, 5,327 NPIs). fact_attendance via federation (31K rows, 14,972 NPIs, data through Nov+). dim_event_owner via SALE_ORG_NM (3,259 events, no longer uses DOMAIN_DP_FACT_EVENTS_ACTIVITY). hcp_xref rebuilt from fact_attendance + dim_call_plan_target + V7 (14,972 NPIs). pre_post_lift recomputed (14,972 NPIs, 488 new writers). Intermediate views v_fact_calls and v_fact_trx_hcp_month still point to old tables (MANAGE permission needed). |
 
 ---
 
 ## 6a. Known Issues (as of Nov 12, 2026)
 
-### Snowflake Federation Connection Broken
+### Snowflake Federation Connection (RESOLDED Nov 12, 2026)
 
-The foreign catalog `cph_db_prod` (connection `snowflake_cdp`, owned by balaji.sundaresan@bayer.com) is returning **0 rows** for all tables as of Nov 8, 2026. The connection was working on Nov 1 (dim_event_owner refreshed with 9,115 rows) but broke sometime before Nov 8.
+The foreign catalog `cph_db_prod` (connection `snowflake_cdp`) was returning 0 rows from the SP_POC_Refresh service principal as of Nov 8. The user confirmed the connection works from their session. The `ANLT_BASE_FACT_EVNT_PRSNL_PROM` table is accessible from the notebook and returns 1.83M rows. The `DOMAIN_DP_FACT_EVENTS_ACTIVITY` table still returns 0 rows from the notebook (likely row-level security), so dim_event_owner now derives from `SALE_ORG_NM` in the attendance source instead.
 
-**Impact:**
-- `dim_event_owner` was **wiped** on Nov 8 by the weekly job. Delta time travel could not restore it (past 168h retention). Territory/rep widgets on the dashboard will show NULLs.
-- `fact_attendance` is **stale** (max event_date Sep 23, last altered Oct 6). Not refreshed by the weekly job; requires Nicholas's Snowflake pipeline.
-- `fact_calls` is **stale** (max call_date Sep 18, last altered Oct 9). Same as above.
-- `pre_post_lift` is recomputed weekly but depends on stale `fact_attendance`, so no new cohorts appear after Sep 23.
+### Pending: v_fact_calls and v_fact_trx_hcp_month view repointing
 
-**Resolution:**
-1. Contact the `snowflake_cdp` connection owner (balaji.sundaresan@bayer.com) or a UC admin to restore the federation connection.
-2. Once restored, re-run the SP_POC_Refresh notebook to repopulate `dim_event_owner`.
-3. Coordinate with Nicholas Siebenlist to re-run the Snowflake pipeline for `fact_attendance`, `fact_calls`, and `fact_trx_hcp_month`.
-4. The dim_event_owner cell now has a guard (Nov 12, 2026) that skips the refresh if the source returns 0 rows.
+The intermediate views `v_fact_calls` and `v_fact_trx_hcp_month` still point to the old `sp_poc.fact_calls` and `sp_poc.fact_trx_hcp_month` tables (stale). Repointing to `kerendia_metric_views.fact_calls` and `kerendia_metric_views.fact_xponent_trx` requires MANAGE permission on the views, which the notebook's service principal does not have. The user needs to run these DDL statements from their session:
+
+```sql
+CREATE OR REPLACE VIEW sp_poc.v_fact_calls AS
+SELECT bh_id, call_name AS call_nm, call_date, npi, CAST(NULL AS BOOLEAN) AS called_within_14d
+FROM kerendia_metric_views.fact_calls WHERE npi IS NOT NULL;
+
+CREATE OR REPLACE VIEW sp_poc.v_fact_trx_hcp_month AS
+SELECT npi, CAST(month_id AS STRING) AS month_id, trx
+FROM kerendia_metric_views.fact_xponent_trx WHERE npi IS NOT NULL;
+```
 
 ---
 
@@ -216,7 +225,8 @@ With Rx data through Sep 25, 2026:
 
 ## 9. Long-term Recommendations
 
-1. **Automate fact_rx_hcp_week refresh**: Schedule SP_POC_Refresh notebook as a weekly Lakeflow Job triggered by v6 table updates
-2. **Parameterize v6 version**: Add a notebook widget for the v6 table path in case v7/v8 is published
-3. **Consolidate Snowflake pipeline**: Work with Nicholas to document or recreate the lost notebook for the 4 Snowflake-sourced tables
-4. **Add row-count alerting**: Create alerts on fact_rx_hcp_week row count to detect stale data
+1. **Automate full pipeline refresh**: Schedule SP_POC_Refresh notebook as a weekly Lakeflow Job
+2. **Repoint intermediate views**: User needs to run DDL to update v_fact_calls and v_fact_trx_hcp_month (see Known Issues above)
+3. **Drop old tables**: Once views are repointed, old sp_poc.fact_calls and sp_poc.fact_trx_hcp_month can be dropped
+4. **Add row-count alerting**: Create alerts on fact_rx_hcp_week and fact_attendance row counts to detect stale data
+5. **Monitor federation**: Check that cph_db_prod federation connection stays healthy; the row-count guard protects against silent wipes
