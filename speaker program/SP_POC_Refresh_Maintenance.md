@@ -26,7 +26,7 @@ All managed tables were originally created on **Sep 25, 2026** by Nicholas Siebe
 | `fact_calls` | `kerendia_metric_views.fact_calls` | 2.6M rows, fresh to Nov 6. Column: `call_name` (was `call_nm`). |
 | `fact_trx_hcp_month` | `kerendia_metric_views.fact_xponent_trx` | `month_id` is INT (was STRING). CAST in v_fact_trx_hcp_month view. |
 
-**Pending:** `v_fact_calls` and `v_fact_trx_hcp_month` intermediate views still point to old sp_poc tables. Repointing requires MANAGE permission on the views (see Known Issues).
+**Pending:** ~~v_fact_calls and v_fact_trx_hcp_month intermediate views still point to old sp_poc tables.~~ **RESOLVED Nov 12, 2026** — both views repointed to kerendia_metric_views. Old sp_poc.fact_calls and sp_poc.fact_trx_hcp_month can be dropped.
 
 ---
 
@@ -182,19 +182,9 @@ As of Nov 12, 2026, all tables are refreshed from the SP_POC_Refresh notebook. f
 
 The foreign catalog `cph_db_prod` (connection `snowflake_cdp`) was returning 0 rows from the SP_POC_Refresh service principal as of Nov 8. The user confirmed the connection works from their session. The `ANLT_BASE_FACT_EVNT_PRSNL_PROM` table is accessible from the notebook and returns 1.83M rows. The `DOMAIN_DP_FACT_EVENTS_ACTIVITY` table still returns 0 rows from the notebook (likely row-level security), so dim_event_owner now derives from `SALE_ORG_NM` in the attendance source instead.
 
-### Pending: v_fact_calls and v_fact_trx_hcp_month view repointing
+### ~~Pending: v_fact_calls and v_fact_trx_hcp_month view repointing~~ RESOLVED Nov 12, 2026
 
-The intermediate views `v_fact_calls` and `v_fact_trx_hcp_month` still point to the old `sp_poc.fact_calls` and `sp_poc.fact_trx_hcp_month` tables (stale). Repointing to `kerendia_metric_views.fact_calls` and `kerendia_metric_views.fact_xponent_trx` requires MANAGE permission on the views, which the notebook's service principal does not have. The user needs to run these DDL statements from their session:
-
-```sql
-CREATE OR REPLACE VIEW sp_poc.v_fact_calls AS
-SELECT bh_id, call_name AS call_nm, call_date, npi, CAST(NULL AS BOOLEAN) AS called_within_14d
-FROM kerendia_metric_views.fact_calls WHERE npi IS NOT NULL;
-
-CREATE OR REPLACE VIEW sp_poc.v_fact_trx_hcp_month AS
-SELECT npi, CAST(month_id AS STRING) AS month_id, trx
-FROM kerendia_metric_views.fact_xponent_trx WHERE npi IS NOT NULL;
-```
+Both intermediate views have been repointed to kerendia_metric_views sources. mv_speaker_calls now returns 408K rows (was 114K stale), mv_speaker_trx returns 191K rows with data through Oct 2026. Old sp_poc.fact_calls and sp_poc.fact_trx_hcp_month tables can now be dropped.
 
 ---
 
@@ -226,7 +216,6 @@ With Rx data through Sep 25, 2026:
 ## 9. Long-term Recommendations
 
 1. **Automate full pipeline refresh**: Schedule SP_POC_Refresh notebook as a weekly Lakeflow Job
-2. **Repoint intermediate views**: User needs to run DDL to update v_fact_calls and v_fact_trx_hcp_month (see Known Issues above)
-3. **Drop old tables**: Once views are repointed, old sp_poc.fact_calls and sp_poc.fact_trx_hcp_month can be dropped
-4. **Add row-count alerting**: Create alerts on fact_rx_hcp_week and fact_attendance row counts to detect stale data
-5. **Monitor federation**: Check that cph_db_prod federation connection stays healthy; the row-count guard protects against silent wipes
+2. **Drop old tables**: sp_poc.fact_calls and sp_poc.fact_trx_hcp_month can now be dropped (views repointed to kerendia_metric_views)
+3. **Add row-count alerting**: Create alerts on fact_rx_hcp_week and fact_attendance row counts to detect stale data
+4. **Monitor federation**: Check that cph_db_prod federation connection stays healthy; the row-count guard protects against silent wipes
