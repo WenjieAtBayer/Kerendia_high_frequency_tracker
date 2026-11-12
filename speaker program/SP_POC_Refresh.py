@@ -61,25 +61,45 @@ V6_TABLE = f"{CATALOG}.kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6"
 # COMMAND ----------
 
 # DBTITLE 1,Refresh dim_event_owner from Veeva events
-# MAGIC %sql
-# MAGIC -- ETL: cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY -> dim_event_owner
-# MAGIC -- One row per Kerendia speaker event with the event owner (requesting rep) and the owner's territory.
-# MAGIC -- QC (Oct 2026): territory is event-level (never varies across attendees of one event), EMPLOYEE_NAME = event owner,
-# MAGIC -- and event_id joins 100% to fact_attendance.event_id. Used to credit invitations to the territory that sent them.
-# MAGIC CREATE OR REPLACE TABLE `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.dim_event_owner
-# MAGIC COMMENT 'Kerendia speaker program events with the event owner (requesting rep) and owner territory, from Veeva via CPH ANALYTICS_V2. Join to fact_attendance on event_id. owner_territory_id matches the 4-character TERR_ID in the NBA dropdown list.'
-# MAGIC AS
-# MAGIC SELECT
-# MAGIC   EVENT_ID AS event_id,
-# MAGIC   MAX(TRIM(SPLIT(TERRITORY_NAME, ' - ')[0])) AS owner_territory_id,
-# MAGIC   MAX(TERRITORY_NAME) AS owner_territory,
-# MAGIC   MAX(TERRITORY_TYPE) AS owner_territory_type,
-# MAGIC   MAX(EMPLOYEE_NAME) AS owner_rep,
-# MAGIC   MAX(EMPLOYEE_ID) AS owner_employee_id,
-# MAGIC   MAX(TRY_CAST(PW_EVENT_TEAM_MEMBER AS INT)) AS team_member_count
-# MAGIC FROM cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY
-# MAGIC WHERE UPPER(PRODUCT_BRAND_NAME) LIKE '%KERENDIA%'
-# MAGIC GROUP BY EVENT_ID
+# ETL: cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY -> dim_event_owner
+# One row per Kerendia speaker event with the event owner (requesting rep) and the owner's territory.
+# QC (Oct 2026): territory is event-level (never varies across attendees of one event), EMPLOYEE_NAME = event owner,
+# and event_id joins 100% to fact_attendance.event_id. Used to credit invitations to the territory that sent them.
+#
+# GUARD (Nov 2026): Check source row count before overwriting. The Snowflake federation connection
+# (cph_db_prod / snowflake_cdp) can intermittently return 0 rows when the connection is stale or broken.
+# Without this guard, CREATE OR REPLACE TABLE silently creates an empty table and wipes the existing data.
+# Delta time travel only retains 168 hours, so a wiped table may not be recoverable.
+
+_src_count = spark.sql("""
+  SELECT COUNT(*) AS n
+  FROM cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY
+  WHERE UPPER(PRODUCT_BRAND_NAME) LIKE '%KERENDIA%'
+""").collect()[0][0]
+
+if _src_count > 0:
+    print(f"Source has {_src_count} rows — refreshing dim_event_owner")
+    spark.sql("""
+    CREATE OR REPLACE TABLE `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.dim_event_owner
+    COMMENT 'Kerendia speaker program events with the event owner (requesting rep) and owner territory, from Veeva via CPH ANALYTICS_V2. Join to fact_attendance on event_id. owner_territory_id matches the 4-character TERR_ID in the NBA dropdown list.'
+    AS
+    SELECT
+      EVENT_ID AS event_id,
+      MAX(TRIM(SPLIT(TERRITORY_NAME, ' - ')[0])) AS owner_territory_id,
+      MAX(TERRITORY_NAME) AS owner_territory,
+      MAX(TERRITORY_TYPE) AS owner_territory_type,
+      MAX(EMPLOYEE_NAME) AS owner_rep,
+      MAX(EMPLOYEE_ID) AS owner_employee_id,
+      MAX(TRY_CAST(PW_EVENT_TEAM_MEMBER AS INT)) AS team_member_count
+    FROM cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY
+    WHERE UPPER(PRODUCT_BRAND_NAME) LIKE '%KERENDIA%'
+    GROUP BY EVENT_ID
+    """)
+    print("dim_event_owner refreshed successfully")
+else:
+    _existing = spark.sql("SELECT COUNT(*) FROM `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.dim_event_owner").collect()[0][0]
+    print(f"WARNING: Snowflake source returned 0 rows — skipping dim_event_owner refresh. Existing table has {_existing} rows.")
+    print("The Snowflake federation connection (cph_db_prod / snowflake_cdp) may be broken. Contact the connection owner.")
 
 # COMMAND ----------
 

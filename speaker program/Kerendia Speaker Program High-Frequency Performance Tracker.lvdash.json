@@ -3695,6 +3695,11 @@
         }
       ]
     },
+    "genieSpace": {
+      "isEnabled": true,
+      "overrideId": "01f1c9939e8a1648bbc09df186d37134",
+      "enablementMode": "ENABLED"
+    },
     "applyModeEnabled": false
   }
 }

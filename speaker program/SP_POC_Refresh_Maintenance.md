@@ -3,8 +3,8 @@
 **Schema:** `ph-com-ai-us-prod-catalog-2553213839599380.sp_poc`
 **Refresh Notebook:** [SP_POC_Refresh](/editor/notebooks/2185703631386936)
 **Design Doc:** [NBA_Speaker_Program_Metric_Views_Design.md](/editor/files/2185703631386937)
-**Last refreshed:** Oct 19, 2026 (fact_rx_hcp_week + pre_post_lift)
-**Last updated:** October 20, 2026
+**Last refreshed:** Nov 8, 2026 (fact_rx_hcp_week via weekly job — Rx data through Oct 16)
+**Last updated:** November 12, 2026
 
 ---
 
@@ -17,9 +17,10 @@ All 6 managed tables were originally created on **Sep 25, 2026** by Nicholas Sie
 | `hcp_xref` | Dimension | 6,742 | 6,742 | N/A | Foundation/MDM + segment lists (Snowflake) |
 | `fact_attendance` | Fact | 7,598 | 6,742 | `event_date` | CPH_DB_PROD.ANALYTICS_V2 (Snowflake) |
 | `fact_calls` | Fact | 114,045 | 5,484 | `call_date` | Lynkuet/Veeva (Snowflake) |
-| `fact_rx_hcp_week` | Fact | 170,463 | 3,049 | `week_ending_date` | `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6` (UC) |
+| `fact_rx_hcp_week` | Fact | 175,246 | 3,100 | `week_ending_date` | `kerendia_laad_based_lrx.kerendia_laad_based_lrx_v6` (UC) |
 | `fact_trx_hcp_month` | Fact | 55,029 | 3,002 | `month_id` | Xponent FTP+non-FTP (Snowflake) |
 | `pre_post_lift` | Derived | 6,742 | 6,742 | `anchor_dt` | fact_attendance + fact_rx_hcp_week + fact_calls |
+| `dim_event_owner` | Dimension | 0 (wiped) | 0 | `event_id` | cph_db_prod.ANALYTICS_V2.DOMAIN_DP_FACT_EVENTS_ACTIVITY (Snowflake federation) |
 
 ---
 
@@ -85,7 +86,7 @@ GROUP BY v6.NPI, v6.PERIOD_ID, v6.INDICATION_GROUP
 
 **Filters explained:**
 - `PRODUCT_GROUP = 'KERENDIA'`: Only Kerendia scripts
-- `PAY_TYPE != 'CASH'`: Exclude cash-pay (non-formulary)
+- `PAY_TYPE`: All pay types included (cash-pay filter removed Oct 20, 2026 — cash-pay is 0.2% of total NBRx)
 - `PERIOD_TYPE IN ('W','X')`: Weekly aggregation types only
 - `rx_matchable = TRUE`: NPIs that exist in both v6 and hcp_xref identity bridge
 
@@ -163,6 +164,28 @@ Coordinate with Nicholas Siebenlist to run the original pipeline. These tables r
 |------|-------|-----------------|-------|
 | Sep 25, 2026 | Nicholas Siebenlist | All 6 tables | Initial load from notebook 804528127606154 |
 | Oct 19, 2026 | Wenjie (SP_POC_Refresh) | fact_rx_hcp_week, pre_post_lift | +4 weeks (Sep 4–25). Rows: 164,627→170,463. NPIs: 2,994→3,049. Fixed UNIX_DATE type mismatch in pre_post_lift. |
+| Nov 8, 2026 | SP_POC weekly job | fact_rx_hcp_week, dim_event_owner (wiped) | Rx data through Oct 16. dim_event_owner wiped to 0 rows — Snowflake federation connection (cph_db_prod / snowflake_cdp) returned 0 rows. See Known Issues below. |
+| Nov 12, 2026 | Wenjie | SP_POC_Refresh notebook | Added row-count guard to dim_event_owner cell: checks source row count before CREATE OR REPLACE; skips refresh and warns if source returns 0 rows. |
+
+---
+
+## 6a. Known Issues (as of Nov 12, 2026)
+
+### Snowflake Federation Connection Broken
+
+The foreign catalog `cph_db_prod` (connection `snowflake_cdp`, owned by balaji.sundaresan@bayer.com) is returning **0 rows** for all tables as of Nov 8, 2026. The connection was working on Nov 1 (dim_event_owner refreshed with 9,115 rows) but broke sometime before Nov 8.
+
+**Impact:**
+- `dim_event_owner` was **wiped** on Nov 8 by the weekly job. Delta time travel could not restore it (past 168h retention). Territory/rep widgets on the dashboard will show NULLs.
+- `fact_attendance` is **stale** (max event_date Sep 23, last altered Oct 6). Not refreshed by the weekly job; requires Nicholas's Snowflake pipeline.
+- `fact_calls` is **stale** (max call_date Sep 18, last altered Oct 9). Same as above.
+- `pre_post_lift` is recomputed weekly but depends on stale `fact_attendance`, so no new cohorts appear after Sep 23.
+
+**Resolution:**
+1. Contact the `snowflake_cdp` connection owner (balaji.sundaresan@bayer.com) or a UC admin to restore the federation connection.
+2. Once restored, re-run the SP_POC_Refresh notebook to repopulate `dim_event_owner`.
+3. Coordinate with Nicholas Siebenlist to re-run the Snowflake pipeline for `fact_attendance`, `fact_calls`, and `fact_trx_hcp_month`.
+4. The dim_event_owner cell now has a guard (Nov 12, 2026) that skips the refresh if the source returns 0 rows.
 
 ---
 
