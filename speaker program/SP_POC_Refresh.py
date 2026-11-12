@@ -36,6 +36,15 @@ MV_SCHEMA = f"{CATALOG}.kerendia_metric_views"
 # Source has event-level SALE_ORG_NM (owner territory) and HCP attributes.
 # Nov 2026: Previously required Nicholas's Snowflake pipeline. Now refreshed directly via federation.
 #
+# SCOPE FILTER (Nov 2026): EVNT_TYP = 'Speaker Program' AND EVNT_STAT IN ('Closed','Completed','Planned').
+#   - Excludes non-speaker events (Sponsorship, Scientific Presentation/Round Tables, medical_event__c,
+#     Advisory Board, Congress, etc.) that inflated Programs Held.
+#   - Excludes Cancelled and NULL-status events.
+#   - Keeps Planned (incl. future-dated) events so NBA invitation tracking (mv_speaker_nba invited_within_60d)
+#     still sees upcoming invitations for recent alert months.
+#   - is_held = event_status IN ('Closed','Completed') AND event_date <= current_date(). Use it for "Programs Held".
+#   - No explicit cancel flag exists: some Closed events have zero attendees (likely closed-but-cancelled); flagged, not dropped.
+#
 # GUARD: Check source row count before overwriting (same pattern as dim_event_owner).
 
 _src_count = spark.sql("""
@@ -44,6 +53,8 @@ _src_count = spark.sql("""
   WHERE UPPER(PROD_BRAND_NM) LIKE '%KERENDIA%'
     AND HCP_NPI_NUM IS NOT NULL
     AND EVNT_START_DATE >= '2025-01-01'
+    AND EVNT_TYP = 'Speaker Program'
+    AND EVNT_STAT IN ('Closed', 'Completed', 'Planned')
 """).collect()[0][0]
 
 if _src_count > 0:
@@ -65,16 +76,21 @@ if _src_count > 0:
         HCP_PRMRY_SPCL AS specialty,
         SALE_ORG_LVL_3_NM AS region,
         SALE_ORG_LVL_1_NM AS area,
-        SALE_ORG_NM AS territory
+        SALE_ORG_NM AS territory,
+        EVNT_STAT AS event_status
       FROM cph_db_prod.ANALYTICS_V2.ANLT_BASE_FACT_EVNT_PRSNL_PROM
       WHERE UPPER(PROD_BRAND_NM) LIKE '%KERENDIA%'
         AND HCP_NPI_NUM IS NOT NULL
         AND EVNT_START_DATE >= '2025-01-01'
+        AND EVNT_TYP = 'Speaker Program'
+        AND EVNT_STAT IN ('Closed', 'Completed', 'Planned')
     ),
     classified AS (
       SELECT
         npi, event_id, event_date, week_ending_date, event_type, format, topic_raw,
         attended_flag, is_target, kerendia_segment, specialty, region, area, territory,
+        event_status,
+        (event_status IN ('Closed', 'Completed') AND event_date <= current_date()) AS is_held,
         CASE
           WHEN UPPER(topic_raw) LIKE '%CKD%' OR UPPER(topic_raw) LIKE '%CHRONIC KIDNEY%' THEN 'CKD'
           WHEN UPPER(topic_raw) LIKE '%HF%' OR UPPER(topic_raw) LIKE '%HEART FAILURE%' THEN 'HF'
@@ -215,6 +231,9 @@ print(f"hcp_xref rebuilt: {_result['rows']} rows, {_result['npis']} NPIs, {_resu
 # but that table is inaccessible via federation (row-level security). Now derived from
 # the attendance source which is accessible. owner_rep is not available from this source.
 #
+# SCOPE FILTER (Nov 2026): same as fact_attendance — EVNT_TYP = 'Speaker Program'
+# AND EVNT_STAT IN ('Closed','Completed','Planned').
+#
 # GUARD: Check source row count before overwriting.
 
 _src_count = spark.sql("""
@@ -223,6 +242,8 @@ _src_count = spark.sql("""
   WHERE UPPER(PROD_BRAND_NM) LIKE '%KERENDIA%'
     AND EVNT_START_DATE >= '2025-01-01'
     AND SALE_ORG_NM IS NOT NULL
+    AND EVNT_TYP = 'Speaker Program'
+    AND EVNT_STAT IN ('Closed', 'Completed', 'Planned')
 """).collect()[0][0]
 
 if _src_count > 0:
@@ -247,6 +268,8 @@ if _src_count > 0:
     WHERE UPPER(PROD_BRAND_NM) LIKE '%KERENDIA%'
       AND EVNT_START_DATE >= '2025-01-01'
       AND SALE_ORG_NM IS NOT NULL
+      AND EVNT_TYP = 'Speaker Program'
+      AND EVNT_STAT IN ('Closed', 'Completed', 'Planned')
     GROUP BY EVNT_ID
     """)
     _result = spark.sql("SELECT COUNT(*) AS rows, COUNT(DISTINCT event_id) AS events FROM `ph-com-ai-us-prod-catalog-2553213839599380`.sp_poc.dim_event_owner").collect()[0]
